@@ -8,44 +8,12 @@ import kotlinx.coroutines.internal.*
 import kotlin.coroutines.*
 import kotlin.jvm.*
 
-/**
- * Non-cancellable dispatch mode.
- *
- * **DO NOT CHANGE THE CONSTANT VALUE**. It might be inlined into legacy user code that was calling
- * inline `suspendAtomicCancellableCoroutine` function and did not support reuse.
- */
-internal const val MODE_ATOMIC = 0
+@PublishedApi internal const val MODE_ATOMIC_DEFAULT: Int = 0 // schedule non-cancellable dispatch for suspendCoroutine
+@PublishedApi internal const val MODE_CANCELLABLE: Int = 1    // schedule cancellable dispatch for suspendCancellableCoroutine
+@PublishedApi internal const val MODE_UNDISPATCHED: Int = 2   // when the thread is right, but need to mark it with current coroutine
 
-/**
- * Cancellable dispatch mode. It is used by user-facing [suspendCancellableCoroutine].
- * Note, that implementation of cancellability checks mode via [Int.isCancellableMode] extension.
- *
- * **DO NOT CHANGE THE CONSTANT VALUE**. It is being into the user code from [suspendCancellableCoroutine].
- */
-@PublishedApi
-internal const val MODE_CANCELLABLE: Int = 1
-
-/**
- * Cancellable dispatch mode for [suspendCancellableCoroutineReusable].
- * Note, that implementation of cancellability checks mode via [Int.isCancellableMode] extension;
- * implementation of reuse checks mode via [Int.isReusableMode] extension.
- */
-internal const val MODE_CANCELLABLE_REUSABLE = 2
-
-/**
- * Undispatched mode for [CancellableContinuation.resumeUndispatched].
- * It is used when the thread is right, but it needs to be marked with the current coroutine.
- */
-internal const val MODE_UNDISPATCHED = 4
-
-/**
- * Initial mode for [DispatchedContinuation] implementation, should never be used for dispatch, because it is always
- * overwritten when continuation is resumed with the actual resume mode.
- */
-internal const val MODE_UNINITIALIZED = -1
-
-internal val Int.isCancellableMode get() = this == MODE_CANCELLABLE || this == MODE_CANCELLABLE_REUSABLE
-internal val Int.isReusableMode get() = this == MODE_CANCELLABLE_REUSABLE
+internal val Int.isCancellableMode get() = this == MODE_CANCELLABLE
+internal val Int.isDispatchedMode get() = this == MODE_ATOMIC_DEFAULT || this == MODE_CANCELLABLE
 
 internal abstract class DispatchedTask<in T>(
     @JvmField public var resumeMode: Int
@@ -54,57 +22,38 @@ internal abstract class DispatchedTask<in T>(
 
     internal abstract fun takeState(): Any?
 
-    /**
-     * Called when this task was cancelled while it was being dispatched.
-     */
-    internal open fun cancelCompletedResult(takenState: Any?, cause: Throwable) {}
+    internal open fun cancelResult(state: Any?, cause: Throwable) {}
 
-    /**
-     * There are two implementations of `DispatchedTask`:
-     * * [DispatchedContinuation] keeps only simple values as successfully results.
-     * * [CancellableContinuationImpl] keeps additional data with values and overrides this method to unwrap it.
-     */
     @Suppress("UNCHECKED_CAST")
     internal open fun <T> getSuccessfulResult(state: Any?): T =
         state as T
 
-    /**
-     * There are two implementations of `DispatchedTask`:
-     * * [DispatchedContinuation] is just an intermediate storage that stores the exception that has its stack-trace
-     *   properly recovered and is ready to pass to the [delegate] continuation directly.
-     * * [CancellableContinuationImpl] stores raw cause of the failure in its state; when it needs to be dispatched
-     *   its stack-trace has to be recovered, so it overrides this method for that purpose.
-     */
-    internal open fun getExceptionalResult(state: Any?): Throwable? =
+    internal fun getExceptionalResult(state: Any?): Throwable? =
         (state as? CompletedExceptionally)?.cause
 
     public final override fun run() {
-        assert { resumeMode != MODE_UNINITIALIZED } // should have been set before dispatching
         val taskContext = this.taskContext
         var fatalException: Throwable? = null
         try {
-            val delegate = delegate as DispatchedContinuation<T>
+            val delegate = delegate.useLocal() as DispatchedContinuation<T> // cast must succeed
             val continuation = delegate.continuation
             val context = continuation.context
             val state = takeState() // NOTE: Must take state in any case, even if cancelled
             withCoroutineContext(context, delegate.countOrElement) {
                 val exception = getExceptionalResult(state)
+                val job = if (resumeMode.isCancellableMode) context[Job] else null
                 /*
                  * Check whether continuation was originally resumed with an exception.
                  * If so, it dominates cancellation, otherwise the original exception
                  * will be silently lost.
                  */
-                val job = if (exception == null && resumeMode.isCancellableMode) context[Job] else null
-                if (job != null && !job.isActive) {
+                if (exception == null && job != null && !job.isActive) {
                     val cause = job.getCancellationException()
-                    cancelCompletedResult(state, cause)
+                    cancelResult(state, cause)
                     continuation.resumeWithStackTrace(cause)
                 } else {
-                    if (exception != null) {
-                        continuation.resumeWithException(exception)
-                    } else {
-                        continuation.resume(getSuccessfulResult(state))
-                    }
+                    if (exception != null) continuation.resumeWithException(exception)
+                    else continuation.resume(getSuccessfulResult(state))
                 }
             }
         } catch (e: Throwable) {
@@ -147,39 +96,36 @@ internal abstract class DispatchedTask<in T>(
     }
 }
 
-internal fun <T> DispatchedTask<T>.dispatch(mode: Int) {
-    assert { mode != MODE_UNINITIALIZED } // invalid mode value for this method
+internal fun <T> CancellableContinuationImpl<T>.dispatch(mode: Int) {
     val delegate = this.delegate
-    val undispatched = mode == MODE_UNDISPATCHED
-    if (!undispatched && delegate is DispatchedContinuation<*> && mode.isCancellableMode == resumeMode.isCancellableMode) {
+    val local = delegate.asLocalOrNull() // go to shareableResume when called from wrong worker
+    if (mode.isDispatchedMode && local is DispatchedContinuation<*> && mode.isCancellableMode == resumeMode.isCancellableMode) {
         // dispatch directly using this instance's Runnable implementation
-        val dispatcher = delegate.dispatcher
-        val context = delegate.context
+        val dispatcher = local.dispatcher
+        val context = local.context
         if (dispatcher.isDispatchNeeded(context)) {
             dispatcher.dispatch(context, this)
         } else {
             resumeUnconfined()
         }
     } else {
-        // delegate is coming from 3rd-party interceptor implementation (and does not support cancellation)
-        // or undispatched mode was requested
-        resume(delegate, undispatched)
+        shareableResume(delegate, mode)
     }
 }
 
-@Suppress("UNCHECKED_CAST")
-internal fun <T> DispatchedTask<T>.resume(delegate: Continuation<T>, undispatched: Boolean) {
-    // This resume is never cancellable. The result is always delivered to delegate continuation.
+internal fun <T> CancellableContinuationImpl<T>.resumeImpl(delegate: Continuation<T>, useMode: Int) {
     val state = takeState()
-    val exception = getExceptionalResult(state)
+    val exception = getExceptionalResult(state)?.let { recoverStackTrace(it, delegate) }
     val result = if (exception != null) Result.failure(exception) else Result.success(getSuccessfulResult<T>(state))
-    when {
-        undispatched -> (delegate as DispatchedContinuation).resumeUndispatchedWith(result)
-        else -> delegate.resumeWith(result)
+    when (useMode) {
+        MODE_ATOMIC_DEFAULT -> delegate.resumeWith(result)
+        MODE_CANCELLABLE -> delegate.resumeCancellableWith(result)
+        MODE_UNDISPATCHED -> (delegate as DispatchedContinuation).resumeUndispatchedWith(result)
+        else -> error("Invalid mode $useMode")
     }
 }
 
-private fun DispatchedTask<*>.resumeUnconfined() {
+private fun <T> CancellableContinuationImpl<T>.resumeUnconfined() {
     val eventLoop = ThreadLocalEventLoop.eventLoop
     if (eventLoop.isUnconfinedLoopActive) {
         // When unconfined loop is active -- dispatch continuation for execution to avoid stack overflow
@@ -187,7 +133,7 @@ private fun DispatchedTask<*>.resumeUnconfined() {
     } else {
         // Was not active -- run event loop until all unconfined tasks are executed
         runUnconfinedEventLoop(eventLoop) {
-            resume(delegate, undispatched = true)
+            resumeImpl(delegate.useLocal(), MODE_UNDISPATCHED)
         }
     }
 }
