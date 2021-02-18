@@ -23,11 +23,11 @@ fun main() {
     Thread.sleep(2000L) // JVM を生かしたままとする（訳注：プログラムを終了させない）ためメイン・スレッドを 2 秒間停止します
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-01.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
 次の結果が得られるでしょう。
 <!--You will see the following result:-->
@@ -102,11 +102,11 @@ fun main() {
     } 
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-02.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
 <!--- TEST
 Hello,
@@ -138,11 +138,11 @@ fun main() = runBlocking<Unit> { // main コルーチンを開始します
     delay(2000L)      // JVM を生かしたままとするため 2 秒間遅延します
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-03.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
 <!--- TEST
 Hello,
@@ -201,11 +201,11 @@ fun main() = runBlocking {
 //sampleEnd    
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-04.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
 <!--- TEST
 Hello,
@@ -274,11 +274,11 @@ fun main() = runBlocking { // this: CoroutineScope
     println("Hello,")
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-05.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
 <!--- TEST
 Hello,
@@ -334,11 +334,11 @@ fun main() = runBlocking { // this: CoroutineScope
     println("Coroutine scope is over") // この行は nested launch が完了するまで出力されません
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-06.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
 <!--- TEST
 Task from coroutine scope
@@ -387,11 +387,11 @@ suspend fun doWorld() {
     println("World!")
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-07.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
 <!--- TEST
 Hello,
@@ -418,15 +418,17 @@ As a last resort, [CoroutineScope(coroutineContext)][CoroutineScope()] can be us
 because you no longer have control on the scope of execution of this method. Only private APIs can use this builder.
 -->
 
-## Coroutines ARE light-weight
+## コルーチンは __軽量__ です
+<!--## Coroutines ARE light-weight-->
 
-Run the following code:
+次のコードを実行しましょう。
+<!--Run the following code:-->
 
 ```kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-    repeat(100_000) { // launch a lot of coroutines
+    repeat(100_000) { // たくさんのコルーチンの起動
         launch {
             delay(5000L)
             print(".")
@@ -437,18 +439,29 @@ fun main() = runBlocking {
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-08.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
 <!--- TEST lines.size == 1 && lines[0] == ".".repeat(100_000) -->
 
+これは 10 万個のコルーチンを起動し、5 秒後にそれぞれのコルーチンがピリオドを印字します。
+
+これをスレッドで試してみてください。何が起こるでしょうか？
+（たいていは、そのコードは何らかのメモリー不足のエラーを生成するでしょう）
+<!--
 It launches 100K coroutines and, after 5 seconds, each coroutine prints a dot. 
 
 Now, try that with threads. What would happen? (Most likely your code will produce some sort of out-of-memory error)
+-->
 
-## Global coroutines are like daemon threads
+## グローバルなコルーチンはデーモン・スレッドに似ています
+<!--## Global coroutines are like daemon threads-->
 
+以下のコードは [GlobalScope] で長時間のコルーチンを起動します。
+そのコルーチンは 1 秒に 2 度 "I'm sleeping" と印字して、いくらかの遅延の後に main 関数に戻ります。
+<!--
 The following code launches a long-running coroutine in [GlobalScope] that prints "I'm sleeping" twice a second and then 
 returns from the main function after some delay:
+-->
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -461,17 +474,20 @@ fun main() = runBlocking {
             delay(500L)
         }
     }
-    delay(1300L) // just quit after delay
+    delay(1300L) // 遅延の後で単に終了する
 //sampleEnd    
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-09.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
+実行してみると、3 行を印字し終了するのがわかります。
+<!--
 You can run and see that it prints three lines and terminates:
+-->
 
 ```text
 I'm sleeping 0 ...
@@ -481,7 +497,11 @@ I'm sleeping 2 ...
 
 <!--- TEST -->
 
+[GlobalScope] において起動されたアクティブなコルーチンは、プロセスを生きたままとしません。
+これはデーモン・スレッドに似ています。
+<!--
 Active coroutines that were launched in [GlobalScope] do not keep the process alive. They are like daemon threads.
+-->
 
 <!--- MODULE kotlinx-coroutines-core -->
 <!--- INDEX kotlinx.coroutines -->
