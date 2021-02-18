@@ -108,10 +108,12 @@ fun main() {
 >
 <!--{type="note"}-->
 
-<!--- TEST
+<!--- TEST-->
+```Text
 Hello,
 World!
--->
+```
+<!-- -->
 
 出力結果は同一ですが、このコードは非ブロッキングな [delay] のみを用いています。
 `runBlocking` を起動するメイン・スレッドは、`runBlocking` 内のコルーチンが完了するまで __ブロック__ されます。
@@ -144,10 +146,12 @@ fun main() = runBlocking<Unit> { // main コルーチンを開始します
 >
 <!--{type="note"}-->
 
-<!--- TEST
+<!--- TEST-->
+```Text
 Hello,
 World!
--->
+```
+<!-- -->
 
 ここで、 `runBlocking<Unit> { ... }` はトップレベルの main コルーチンを開始させるためのアダプターとして機能しています。
 その返り値を明示的に  `Unit` として指定しました。 
@@ -207,10 +211,12 @@ fun main() = runBlocking {
 >
 <!--{type="note"}-->
 
-<!--- TEST
+<!--- TEST-->
+```Text
 Hello,
 World!
--->
+```
+<!-- -->
 
 これでも出力結果は変わりませんが、
 main コルーチンのコードはバックグラウンドのジョブの持続期間に何ら（訳注：コード上で）拘束されていません。
@@ -280,10 +286,12 @@ fun main() = runBlocking { // this: CoroutineScope
 >
 <!--{type="note"}-->
 
-<!--- TEST
+<!--- TEST-->
+```Text
 Hello,
 World!
--->
+```
+<!-- -->
 
 ## スコープ・ビルダー
 <!--## Scope builder-->
@@ -340,12 +348,14 @@ fun main() = runBlocking { // this: CoroutineScope
 >
 <!--{type="note"}-->
 
-<!--- TEST
+<!--- TEST-->
+```Text
 Task from coroutine scope
 Task from runBlocking
 Task from nested launch
 Coroutine scope is over
--->
+```
+<!-- -->
 
 "Task from coroutine scope" のメッセージの直後に（ネストされた launch を待っている間に）、
 — [coroutineScope][_coroutineScope] がまだ完了していないとしても —
@@ -393,10 +403,12 @@ suspend fun doWorld() {
 >
 <!--{type="note"}-->
 
-<!--- TEST
+<!--- TEST-->
+```Text
 Hello,
 World!
--->
+```
+<!-- -->
 
 しかし、抽出した関数が現在のスコープで起動されるコルーチン・ビルダーを持っていた場合はどうなるでしょうか？
 その場合、週出関数の `suspend` 修飾子だけでは十分ではありません。
