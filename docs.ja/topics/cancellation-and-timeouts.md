@@ -179,7 +179,7 @@ fun main() = runBlocking {
 >
 <!--{type="note"}-->
 
-今度はループがキャンされるされることがわかります。
+こんどはループがキャンされることがわかります。
 [isActive] は、[CoroutineScope] オブジェクトを介してコルーチン内部で利用可能な拡張プロパティです。
 <!--
 As you can see, now this loop is cancelled. [isActive] is an extension property 
@@ -194,11 +194,17 @@ main: I'm tired of waiting!
 main: Now I can quit.
 -->
 
-## Closing resources with `finally`
+## リソースを `finally` で閉じる
+<!--## Closing resources with `finally`-->
 
+キャンセル可能なサスペンド関数は、キャンセルのとき通常の方法で扱うことができる [CancellationException] を送出します。
+例えば、`try {...} finally {...}` 式と Kotlin の `use` 関数は、
+コルーチンがキャンセルされたときその終了処理を通常のように実行します。
+<!--
 Cancellable suspending functions throw [CancellationException] on cancellation which can be handled in 
 the usual way. For example, `try {...} finally {...}` expression and Kotlin `use` function execute their
 finalization actions normally when a coroutine is cancelled:
+-->
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -222,14 +228,18 @@ fun main() = runBlocking {
 //sampleEnd    
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-04.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
+[join][Job.join] と [cancelAndJoin] とはともにすべての終了処理が完了するのを待機するので、
+上の例は以下の出力を与えます。
+<!--
 Both [join][Job.join] and [cancelAndJoin] wait for all finalization actions to complete, 
 so the example above produces the following output:
+-->
 
 ```text
 job: I'm sleeping 0 ...
