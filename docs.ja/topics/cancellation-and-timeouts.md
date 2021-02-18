@@ -121,7 +121,8 @@ Run it to see that it continues to print "I'm sleeping" even after cancellation
 until the job completes by itself after five iterations.
 -->
 
-<!--- TEST 
+<!--- TEST-->
+```Text
 job: I'm sleeping 0 ...
 job: I'm sleeping 1 ...
 job: I'm sleeping 2 ...
@@ -129,7 +130,8 @@ main: I'm tired of waiting!
 job: I'm sleeping 3 ...
 job: I'm sleeping 4 ...
 main: Now I can quit.
--->
+```
+<!-- -->
 
 ## 計算コードをキャンセル可能にする
 <!--## Making computation code cancellable-->
@@ -186,13 +188,15 @@ As you can see, now this loop is cancelled. [isActive] is an extension property
 available inside the coroutine via the [CoroutineScope] object.
 -->
 
-<!--- TEST
+<!--- TEST-->
+```Text
 job: I'm sleeping 0 ...
 job: I'm sleeping 1 ...
 job: I'm sleeping 2 ...
 main: I'm tired of waiting!
 main: Now I can quit.
--->
+```
+<!-- -->
 
 ## リソースを `finally` で閉じる
 <!--## Closing resources with `finally`-->
@@ -252,7 +256,8 @@ main: Now I can quit.
 
 <!--- TEST -->
 
-## Run non-cancellable block
+## キャンセル可能でないブロックを実行する
+<!--## Run non-cancellable block-->
 
 Any attempt to use a suspending function in the `finally` block of the previous example causes
 [CancellationException], because the coroutine running this code is cancelled. Usually, this is not a 
@@ -303,7 +308,8 @@ job: And I've just delayed for 1 sec because I'm non-cancellable
 main: Now I can quit.
 -->
 
-## Timeout
+## タイムアウト
+<!--## Timeout-->
 
 The most obvious practical reason to cancel execution of a coroutine 
 is because its execution time has exceeded some timeout.
@@ -385,7 +391,8 @@ Result is null
 
 <!--- TEST -->
 
-## Asynchronous timeout and resources
+## 非同期のタイムアウトとリソース
+<!--## Asynchronous timeout and resources-->
 
 <!-- 
   NOTE: Don't change this section name. It is being referenced to from within KDoc of withTimeout functions.
