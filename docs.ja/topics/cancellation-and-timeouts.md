@@ -198,7 +198,7 @@ main: Now I can quit.
 ```
 <!-- -->
 
-## リソースを `finally` で閉じる
+## リソースを `finally` で終了する
 <!--## Closing resources with `finally`-->
 
 キャンセル可能なサスペンド関数は、キャンセルのとき通常の方法で扱うことができる [CancellationException] を送出します。
@@ -259,12 +259,20 @@ main: Now I can quit.
 ## キャンセル可能でないブロックを実行する
 <!--## Run non-cancellable block-->
 
+上の例での `finally` ブロックにおいてサスペンド関数を使おうとすれば、
+このコードを実行しているコルーチンがキャンセルされているために常に [CancellationException] を発生させます。
+通常、これは問題とはなりません。なぜなら、すべての行儀がよい終了操作（ファイルを閉じることや、ジョブをキャンセルすること、任意の種類の通信チャネルを閉じること）は、ふつう非ブロッキングであり、いかなるサスペンド関数も関与していないからです。
+しかし、キャンセルされたコルーチンにおいてサスペンドする必要があるまれな場合には、
+対応するコードを [withContext] 関数と [NonCancellable] コンテキストを用いて、
+以下の例に示すように `withContext(NonCancellable) {...}` で包むことができます。
+<!--
 Any attempt to use a suspending function in the `finally` block of the previous example causes
 [CancellationException], because the coroutine running this code is cancelled. Usually, this is not a 
 problem, since all well-behaving closing operations (closing a file, cancelling a job, or closing any kind of a 
 communication channel) are usually non-blocking and do not involve any suspending functions. However, in the 
 rare case when you need to suspend in a cancelled coroutine you can wrap the corresponding code in
 `withContext(NonCancellable) {...}` using [withContext] function and [NonCancellable] context as the following example shows:
+-->
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -292,13 +300,14 @@ fun main() = runBlocking {
 //sampleEnd    
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-05.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
-<!--- TEST
+<!--- TEST-->
+```Text
 job: I'm sleeping 0 ...
 job: I'm sleeping 1 ...
 job: I'm sleeping 2 ...
@@ -306,7 +315,8 @@ main: I'm tired of waiting!
 job: I'm running finally
 job: And I've just delayed for 1 sec because I'm non-cancellable
 main: Now I can quit.
--->
+```
+<!-- -->
 
 ## タイムアウト
 <!--## Timeout-->
