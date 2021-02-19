@@ -569,11 +569,16 @@ fun main() {
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-09.kt).-->
 <!--{type="note"}-->
 
+この例では常に 0 が出力され、リソースのリークはありません。
+<!--
 This example always prints zero. Resources do not leak.
-
-<!--- TEST 
-0
 -->
+
+<!--- TEST -->
+```Text
+0
+```
+<!-- -->
 
 <!--- MODULE kotlinx-coroutines-core -->
 <!--- INDEX kotlinx.coroutines -->
