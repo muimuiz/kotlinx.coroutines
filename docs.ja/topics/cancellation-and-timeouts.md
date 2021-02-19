@@ -40,8 +40,9 @@ fun main() = runBlocking {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-01.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-01.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-01.kt).-->
 <!--{type="note"}-->
 
 これは次のような出力を生成します。
@@ -70,12 +71,12 @@ that combines [cancel][Job.cancel] and [join][Job.join] invocations.
 ## キャンセルは協調的
 <!--## Cancellation is cooperative-->
 
-コルーチンのキャンセルは __協調的__ (cooperative) です。
-キャンセル可能 (cancellable) であるためにコルーチンのコードは協調する必要があります。
+コルーチンのキャンセルは __協調的__ (cooperative) なものです。
+キャンセルが可能であるためにはコルーチンのコードが協調する必要があります。
 `kotlinx.coroutines` にあるすべてのサスペンド関数は __キャンセル可能__ (cancellable) です。
 それらは、コルーチンのキャンセルをチェックし、キャンセルされたならば [CancellationException] を送出します。
-しかし、あるコルーチンが計算を行っていて、キャンセルをチェックしないならば、
-以下の例に示すようにキャンセルすることができません。
+しかし、あるコルーチンが計算を行っていて、キャンセルされたことをチェックしないならば、
+以下の例に示すようにそれをキャンセルすることはできません。
 <!--
 Coroutine cancellation is _cooperative_. A coroutine code has to cooperate to be cancellable.
 All the suspending functions in `kotlinx.coroutines` are _cancellable_. They check for cancellation of 
@@ -110,8 +111,9 @@ fun main() = runBlocking {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-02.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-02.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-02.kt).-->
 <!--{type="note"}-->
 
 これを実行すると、キャンセルしても
@@ -177,8 +179,9 @@ fun main() = runBlocking {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-03.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-03.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-03.kt).-->
 <!--{type="note"}-->
 
 こんどはループがキャンされることがわかります。
@@ -234,8 +237,9 @@ fun main() = runBlocking {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-04.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-04.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-04.kt).-->
 <!--{type="note"}-->
 
 [join][Job.join] と [cancelAndJoin] とはともにすべての終了処理が完了するのを待機するので、
@@ -302,8 +306,9 @@ fun main() = runBlocking {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-05.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-05.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-05.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST-->
