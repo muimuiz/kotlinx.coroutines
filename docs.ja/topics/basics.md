@@ -373,11 +373,11 @@ Note that right after the "Task from coroutine scope" message (while waiting for
  "Task from runBlocking" is executed and printed — even though the [coroutineScope][_coroutineScope] is not completed yet. 
 -->
 
-## 関数抽出による構造整理（リファクタリング）
+## 関数抽出によるリファクタリング
 <!--## Extract function refactoring-->
 
 `launch { ... }` 内部にあるコードのブロックを別の関数へと抽出してみましょう。
-このコードに対する「関数抽出」(Extract function) リファクタリングを行う場合、
+このコードに対する「関数抽出」(Extract function) リファクタリング（構造整理）を行う場合、
 新たな関数は `suspend` 修飾子を付けた関数となります。
 これは __サスペンド関数__ (suspending function) の最初の例です。
 サスペンド関数はコルーチンの内部で通常の関数のように用いることができますが、
@@ -420,7 +420,8 @@ World!
 <!-- -->
 
 しかし、抽出した関数が現在のスコープで起動されるコルーチン・ビルダーを持っていた場合はどうなるでしょうか？
-その場合、抽出関数の `suspend` 修飾子だけでは十分ではありません。
+その場合、抽出関数の `suspend` 修飾子だけでは十分ではありません
+（訳注：コルーチン・ビルダー launch は CoroutineScope のメソッドなので）。
 `doWorld` を `CoroutineScope` における拡張メソッドにするというのがひとつの解決法ですが、
 API を明快なものとしないので、これはいつでもは適用できないでしょう。
 慣用的な解決策は、明示的な `CoroutineScope` を対象となる関数を含むクラスのフィールドとして持つか、
