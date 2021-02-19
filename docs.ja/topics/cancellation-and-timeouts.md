@@ -326,11 +326,19 @@ main: Now I can quit.
 ## タイムアウト
 <!--## Timeout-->
 
+コルーチンの実行をキャンセルする理由で最も明らかで実用的なものは、
+その実行時間があるタイムアウト（時間切れ）の時間を超えたからというものです。
+対応する [Job] への参照を手動で追跡し、
+間延びした追跡コルーチンをキャンセルするために別のコルーチンを起動することもできますが、
+これを行う [withTimeout] 関数が使えます。
+次の例を見てみましょう。
+<!--
 The most obvious practical reason to cancel execution of a coroutine 
 is because its execution time has exceeded some timeout.
 While you can manually track the reference to the corresponding [Job] and launch a separate coroutine to cancel 
 the tracked one after delay, there is a ready to use [withTimeout] function that does it.
 Look at the following example:
+-->
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -346,13 +354,17 @@ fun main() = runBlocking {
 //sampleEnd
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-06.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-06.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-06.kt).-->
+<!--{type="note"}-->
 
+これは次のような出力を与えます。
+<!--
 It produces the following output:
+-->
 
 ```text
 I'm sleeping 0 ...
@@ -363,15 +375,29 @@ Exception in thread "main" kotlinx.coroutines.TimeoutCancellationException: Time
 
 <!--- TEST STARTS_WITH -->
 
+[withTimeout] により送出される `TimeoutCancellationException` は [CancellationException] のサブクラスです。
+これまでそのスタックトレースがコンソール上に表示されるのを見てきませんでした。
+それは、キャンセルされたコルーチン内部においては、
+`CancellationException` がコルーチンが終了する通常の理由であるとみなされていたからです。
+しかしこの例においては、`withTimeout` を `main` 関数のすぐ内側で使用しています。
+<!--
 The `TimeoutCancellationException` that is thrown by [withTimeout] is a subclass of [CancellationException].
 We have not seen its stack trace printed on the console before. That is because
 inside a cancelled coroutine `CancellationException` is considered to be a normal reason for coroutine completion. 
 However, in this example we have used `withTimeout` right inside the `main` function. 
+-->
 
+キャンセルは単なる例外なので、すべてのリソースは通常の方法で終了されます。
+何らかの種類のタイムアウトに対してもし特に何か追加の処理が必要なら、
+`try {...} catch (e: TimeoutCancellationException) {...}` ブロックのタイムアウト時のコードをラップできます。
+また次のように、[withTimeout] に類似しているものの例外の送出の代わりにタイムアウト時に `null` を返す
+[withTimeoutOrNull] 関数を使うこともできます。
+<!--
 Since cancellation is just an exception, all resources are closed in the usual way. 
 You can wrap the code with timeout in a `try {...} catch (e: TimeoutCancellationException) {...}` block if 
 you need to do some additional action specifically on any kind of timeout or use the [withTimeoutOrNull] function
 that is similar to [withTimeout] but returns `null` on timeout instead of throwing an exception:
+-->
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -389,13 +415,17 @@ fun main() = runBlocking {
 //sampleEnd
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-07.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-07.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-07.kt).-->
+<!--{type="note"}-->
 
+次のように、このコードを実行した場合もはや例外は送出されません。
+<!--
 There is no longer an exception when running this code:
+-->
 
 ```text
 I'm sleeping 0 ...
@@ -413,14 +443,28 @@ Result is null
   NOTE: Don't change this section name. It is being referenced to from within KDoc of withTimeout functions.
 -->
 
+[withTimeout] におけるタイムアウトの発生は、
+ブロック内で実行されているコードに関して非同期的 (asynchronous) で、
+いつでも、たとえタイムアウトのブロックの内部から戻る直前であったとしても起こる可能性があります。
+ブロックの内側で何らかのリソースを開いたり取得したりしてるならば、
+そのブロックの外側で閉じたり開放したりする必要があることを覚えておきましょう。
+<!--
 The timeout event in [withTimeout] is asynchronous with respect to the code running in its block and may happen at any time,
 even right before the return from inside of the timeout block. Keep this in mind if you open or acquire some
 resource inside the block that needs closing or release outside of the block. 
+-->
 
+例えば、ここでは `Resource` クラスを用いてクローズが必要なリソースを模倣しています。
+これは `acquired` カウンターをインクリメントするとともに `close` 関数によってこのカウンターをデクリメントすることによって
+何回生成されたかを単純に記録します。
+小さなタイムアウト時間をもつ多数のコルーチンを実行し、
+わずかな遅延の後に `withTimeout` ブロックの内部からこのリソースの取得を試みて、外部でそれを解放してみましょう。
+<!--
 For example, here we imitate a closeable resource with the `Resource` class, that simply keeps track of how many times 
 it was created by incrementing the `acquired` counter and decrementing this counter from its `close` function.
 Let us run a lot of coroutines with the small timeout try acquire this resource from inside
 of the `withTimeout` block after a bit of delay and release it from outside.
+-->
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -450,25 +494,40 @@ fun main() {
 }
 //sampleEnd
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-08.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-08.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-08.kt).-->
+<!--{type="note"}-->
 
 <!--- CLEAR -->
 
+上のコードを実行すると、これは常に 0 を出力するわけではないことがわかるでしょう。
+マシンのタイミングによりますが、この例で実際に 0 でない値を得るにはタイムアウトの時間を微調整する必要があるかもしれません。
+<!--
 If you run the above code you'll see that it does not always print zero, though it may depend on the timings 
 of your machine you may need to tweak timeouts in this example to actually see non-zero values. 
+-->
 
+> 注目すべきことは、ここでの 10 万個のコルーチンによる `acquired` カウンターのインクリメントとデクリメントは、
+> 常に同じメインスレッドから行われているので完全に安全であるということです。
+> このことについてより詳しいことは、コルーチンのコンテキストに関する次の章において説明します。
+> 
+<!--
 > Note, that incrementing and decrementing `acquired` counter here from 100K coroutines is completely safe,
 > since it always happens from the same main thread. More on that will be explained in the next chapter
 > on coroutine context.
 > 
-{type="note"}
+-->
+<!--{type="note"}-->
 
+ここでの問題を回避するために、`withTimeout` ブロックからリソースへの参照を返すのではなく、
+それを変数に保持することができます。
+<!--
 To workaround this problem you can store a reference to the resource in the variable as opposed to returning it 
 from the `withTimeout` block. 
+-->
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -503,11 +562,12 @@ fun main() {
 //sampleEnd
 }
 ```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-09.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-09.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-09.kt).-->
+<!--{type="note"}-->
 
 This example always prints zero. Resources do not leak.
 
