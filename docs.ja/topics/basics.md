@@ -25,8 +25,9 @@ fun main() {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-01.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-01.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-01.kt).-->
 <!--{type="note"}-->
 
 次の結果が得られるでしょう。
@@ -40,7 +41,7 @@ World!
 <!--- TEST -->
 
 本質的にはコルーチンは軽量のスレッドです。
-コルーチンは、ある [CoroutineScope] のコンテキストにおいて [launch] __コルーチン・ビルダー__ により起動されます。
+コルーチンは、[launch] __コルーチン・ビルダー__ によりある [CoroutineScope] のコンテキストにおいて起動されます。
 ここでは、新しいコルーチンを [GlobalScope] において起動しています。
 これは、その新たなコルーチンの生存期間がアプリケーション全体の生存期間によってのみ限定されていることを意味しています。
 <!--
@@ -59,7 +60,7 @@ You can achieve the same result by replacing
 Try it (don't forget to import `kotlin.concurrent.thread`).
 -->
 
-もし最初に `GlobalScope.launch` を `thread` に置き換えたとすると、コンパイラーが次のようなエラーを出すでしょう。
+もしあなたがはじめに `GlobalScope.launch` を `thread` に置き換えたとすると、コンパイラーが次のようなエラーを出すでしょう。
 <!--
 If you start by replacing `GlobalScope.launch` with `thread`, the compiler produces the following error:
 -->
@@ -68,7 +69,7 @@ If you start by replacing `GlobalScope.launch` with `thread`, the compiler produ
 Error: Kotlin: Suspend functions are only allowed to be called from a coroutine or another suspend function
 ```
 
-これは [delay] が、スレッドをブロック (block) させないもののコルーチンは __サスペンド__ (suspend) する
+これは [delay] が、スレッドはブロッキング (block) させない一方、コルーチンは __サスペンド__ (suspend) する
 特殊な __サスペンド関数__ (suspending function) というものであるためで、コルーチンからしか用いることができないためです。 
 <!--
 That is because [delay] is a special _suspending function_ that does not block a thread, but _suspends_ the
@@ -80,7 +81,7 @@ coroutine, and it can be only used from a coroutine.
 
 上の最初の例は、__非ブロッキング__ (non-blocking) の `delay(...)` と __ブロッキング__ (blocking) する `Thread.sleep(...)` を
 同じコード内で混ぜています。
-一方がブロックしもう一方がブロックしないことを自覚し続けるのは難しい<!--easy to lose track-->ものです。
+一方がブロッキングしもう一方がブロッキングしないことを自覚し続けるのは難しい<!--easy to lose track-->ものです。
 [runBlocking] コルーチン・ビルダーを用いてブロッキングを明示することにしましょう。
 <!--
 The first example mixes _non-blocking_ `delay(...)` and _blocking_ `Thread.sleep(...)` in the same code. 
@@ -97,15 +98,16 @@ fun main() {
         println("World!")
     }
     println("Hello,") // メイン・スレッドはここから直ちに続行します
-    runBlocking {     // しかし、この式でメイン・スレッドはブロックされます
+    runBlocking {     // しかし、この式でメイン・スレッドはブロッキングされます
         delay(2000L)  // ... JVM を生かしたままとするため 2 秒間遅延する間は
     } 
 }
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-02.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-02.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-02.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST-->
@@ -116,13 +118,13 @@ World!
 <!-- -->
 
 出力結果は同一ですが、このコードは非ブロッキングな [delay] のみを用いています。
-`runBlocking` を起動するメイン・スレッドは、`runBlocking` 内のコルーチンが完了するまで __ブロック__ されます。
+`runBlocking` を起動するメイン・スレッドは、`runBlocking` 内のコルーチンが完了するまで __ブロッキング__ されます<!--blocks 自動詞的に用いられている？-->。
 <!--
 The result is the same, but this code uses only non-blocking [delay]. 
 The main thread invoking `runBlocking` _blocks_ until the coroutine inside `runBlocking` completes. 
 -->
 
-この例は、main 関数の実行を `runBlocking` でラップするというもっと慣用的なやり方に書き直すこともできます。
+この例は、main 関数の実行を `runBlocking` で包む（ラップする）というもっと慣用的なやり方に書き直すこともできます。
 <!--
 This example can be also rewritten in a more idiomatic way, using `runBlocking` to wrap 
 the execution of the main function:
@@ -142,8 +144,9 @@ fun main() = runBlocking<Unit> { // main コルーチンを開始します
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-03.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-03.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-03.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST-->
@@ -153,7 +156,7 @@ World!
 ```
 <!-- -->
 
-ここで、 `runBlocking<Unit> { ... }` はトップレベルの main コルーチンを開始させるためのアダプターとして機能しています。
+ここで、 `runBlocking<Unit> { ... }` はトップレベルの main コルーチンを開始させるための装着部品（アダプター）として機能しています。
 その返り値を明示的に  `Unit` として指定しました。 
 これは Kotlin における適正な `main` 関数が `Unit` の返り値を持たねばならない（訳注：何も返さないのでなければならない）ためです。
 <!--
@@ -184,7 +187,7 @@ class MyTest {
 ## ジョブを待機する
 <!--## Waiting for a job-->
 
-別のコルーチンが動いている間、しばらく遅延するというアプローチはよいものではありません。
+別のコルーチンが動いている間、決まった時間の遅延を行うというアプローチはよいものではありません。
 起動したバックグラウンドの [Job] が完了するまで明示的に（非ブロッキングな方法で）待機するようにしましょう。
 <!--
 Delaying for a time while another coroutine is working is not a good approach. Let's explicitly 
@@ -207,8 +210,9 @@ fun main() = runBlocking {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-04.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-04.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-04.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST-->
@@ -220,13 +224,13 @@ World!
 
 これでも出力結果は変わりませんが、
 main コルーチンのコードはバックグラウンドのジョブの持続期間に何ら（訳注：コード上で）拘束されていません。
-ずっと優れています。
+ずっとよくなりました。
 <!--
 Now the result is still the same, but the code of the main coroutine is not tied to the duration of
 the background job in any way. Much better.
 -->
 
-## 構造化された並列性
+## 構造化並列性
 <!--## Structured concurrency-->
 
 実用的にコルーチンを用いるときには、まだ必要とされるものがあります。
@@ -250,6 +254,7 @@ Having to manually keep references to all the launched coroutines and [join][Job
 コードに構造化された並列性 (structured concurrency) を使うことです。
 ふつうにスレッドの間で行うのと同じように（スレッドは常にグローバルです）[GlobalScope] においてコルーチンを起動する代わりに、
 いま実行している操作の特定のスコープにおいてコルーチンを起動することができます。
+（訳注：構造化並列性 \[structured concurrency\] は並列に実行される〔同時実行される〕関数が明確に入れ子になっており、呼ばれた側が終了するまで呼び出した側が終了しないことをいう。これにより、スコープも入れ子となることが保証される）
 <!--
 There is a better solution. We can use structured concurrency in our code. 
 Instead of launching coroutines in the [GlobalScope], just like we usually do with threads (threads are always global), 
@@ -282,8 +287,9 @@ fun main() = runBlocking { // this: CoroutineScope
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-05.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-05.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-05.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST-->
@@ -305,7 +311,7 @@ In addition to the coroutine scope provided by different builders, it is possibl
 -->
 
 [runBlocking] と [coroutineScope][_coroutineScope] は、どちらも本体とすべての子が完了することを待機するので似ているように見えます。
-主たる違いは、[runBlocking] メソッドが現在のスレッドを __ブロック__ して待機するのに対して、
+主たる違いは、[runBlocking] メソッドが現在のスレッドを __ブロッキング__ して待機するのに対して、
 [coroutineScope][_coroutineScope] はサスペンドするだけで、元となっているスレッドを他の目的のために解放することです。
 この違いにより、[runBlocking] は通常の関数であり、[coroutineScope][_coroutineScope] はサスペンド関数となります。
 <!--
@@ -344,8 +350,9 @@ fun main() = runBlocking { // this: CoroutineScope
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-06.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-06.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-06.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST-->
@@ -358,8 +365,9 @@ Coroutine scope is over
 <!-- -->
 
 "Task from coroutine scope" のメッセージの直後に（ネストされた launch を待っている間に）、
-— [coroutineScope][_coroutineScope] がまだ完了していないとしても —
-"Task from runBlocking" が実行され表示されることに注目してください。
+"Task from runBlocking" が実行され表示されること
+⸺[coroutineScope][_coroutineScope] がまだ完了していないとしても⸺
+に注目してください。
 <!--
 Note that right after the "Task from coroutine scope" message (while waiting for nested launch)
  "Task from runBlocking" is executed and printed — even though the [coroutineScope][_coroutineScope] is not completed yet. 
@@ -399,8 +407,9 @@ suspend fun doWorld() {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-07.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-07.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-07.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST-->
@@ -430,7 +439,7 @@ As a last resort, [CoroutineScope(coroutineContext)][CoroutineScope()] can be us
 because you no longer have control on the scope of execution of this method. Only private APIs can use this builder.
 -->
 
-## コルーチンは __軽量__ です
+## コルーチンはとても軽量です
 <!--## Coroutines ARE light-weight-->
 
 次のコードを実行しましょう。
@@ -449,19 +458,21 @@ fun main() = runBlocking {
 }
 ```
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-08.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-08.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-08.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST lines.size == 1 && lines[0] == ".".repeat(100_000) -->
 
 これは 10 万個のコルーチンを起動し、5 秒後にそれぞれのコルーチンがピリオドを印字します。
+<!--
+It launches 100K coroutines and, after 5 seconds, each coroutine prints a dot. 
+-->
 
 これをスレッドで試してみてください。何が起こるでしょうか？
 （たいていは、そのコードは何らかのメモリー不足のエラーを生成するでしょう）
 <!--
-It launches 100K coroutines and, after 5 seconds, each coroutine prints a dot. 
-
 Now, try that with threads. What would happen? (Most likely your code will produce some sort of out-of-memory error)
 -->
 
@@ -492,8 +503,9 @@ fun main() = runBlocking {
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-09.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-09.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-09.kt).-->
 <!--{type="note"}-->
 
 実行してみると、3 行を印字し終了するのがわかります。
