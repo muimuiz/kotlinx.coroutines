@@ -436,13 +436,20 @@ even though the operation that initiated it was aborted. This problem does not h
 concurrency, as shown in the section below.
 -->
 
-## async のある構造化並列性
+## async をもつ構造化並列性
 <!--## Structured concurrency with async-->
 
+[async を用いた並列処理](#async-を用いた並列処理) を例に取り、
+`doSomethingUsefulOne` と `doSomethingUsefulTwo` を同時に実行し、その結果の合計を返す関数を抽出してみましょう。
+[async] コルーチン・ビルダーは [CoroutineScope] の拡張として定義されているので、
+それをそのスコープ内に持つ必要があります。
+このスコープは [coroutineScope][_coroutineScope] 関数が提供します。
+<!--
 Let us take the [Concurrent using async](#concurrent-using-async) example and extract a function that 
 concurrently performs `doSomethingUsefulOne` and `doSomethingUsefulTwo` and returns the sum of their results.
 Because the [async] coroutine builder is defined as an extension on [CoroutineScope], we need to have it in the 
 scope and that is what the [coroutineScope][_coroutineScope] function provides:
+-->
 
 ```kotlin
 suspend fun concurrentSum(): Int = coroutineScope {
@@ -451,13 +458,29 @@ suspend fun concurrentSum(): Int = coroutineScope {
     one.await() + two.await()
 }
 ```
+<!--
+suspend fun concurrentSum(): Int = coroutineScope {
+    val one = async { doSomethingUsefulOne() }
+    val two = async { doSomethingUsefulTwo() }
+    one.await() + two.await()
+}
+-->
 
+このやり方により、この `concurrentSum` 関数のコード内部で何か問題が起こったとき、そのスコープ内で起動されたすべてのコルーチンがキャンセルされることとなります。
+<!--
 This way, if something goes wrong inside the code of the `concurrentSum` function and it throws an exception,
 all the coroutines that were launched in its scope will be cancelled.
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+    val time = measureTimeMillis {
+        println("The answer is ${concurrentSum()}")
+    }
+    println("Completed in $time ms")
+```
+<!--
 import kotlinx.coroutines.*
 import kotlin.system.*
 
@@ -485,14 +508,18 @@ suspend fun doSomethingUsefulTwo(): Int {
     delay(1000L) // pretend we are doing something useful here, too
     return 29
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-05.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-05.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-05.kt).-->
+<!--{type="note"}-->
 
+上の `main` 関数の出力が示すように、両方の操作は依然として同時に実行されます。
+<!--
 We still have concurrent execution of both operations, as evident from the output of the above `main` function: 
+-->
 
 ```text
 The answer is 42
@@ -501,11 +528,41 @@ Completed in 1017 ms
 
 <!--- TEST ARBITRARY_TIME -->
 
+キャンセルは常にコルーチンの階層をたぐって伝播します。
+<!--
 Cancellation is always propagated through coroutines hierarchy:
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+import kotlinx.coroutines.*
+
+fun main() = runBlocking<Unit> {
+    try {
+        failedConcurrentSum()
+    } catch(e: ArithmeticException) {
+        println("Computation failed with ArithmeticException")
+    }
+}
+
+suspend fun failedConcurrentSum(): Int = coroutineScope {
+    val one = async<Int> { 
+        try {
+            delay(Long.MAX_VALUE) // 非常に長い計算を模倣しています
+            42
+        } finally {
+            println("First child was cancelled")
+        }
+    }
+    val two = async<Int> { 
+        println("Second child throws an exception")
+        throw ArithmeticException()
+    }
+    one.await() + two.await()
+}
+```
+<!--
 import kotlinx.coroutines.*
 
 fun main() = runBlocking<Unit> {
@@ -531,15 +588,19 @@ suspend fun failedConcurrentSum(): Int = coroutineScope {
     }
     one.await() + two.await()
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-06.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-06.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-06.kt).-->
+<!--{type="note"}-->
 
+子の一方（ここでは `two`）が失敗したとき、最初の `async` と待機中の親の療法がキャンセルされることに注目してください。
+<!--
 Note how both the first `async` and the awaiting parent are cancelled on failure of one of the children
 (namely, `two`):
+-->
 ```text
 Second child throws an exception
 First child was cancelled
