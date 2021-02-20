@@ -275,7 +275,7 @@ start `one`, then start `two`, and then await for the individual coroutines to f
 
 はじめにそれぞれのコルーチンの [start][Job.start] を呼ぶことなく、
 単に `println` の中で [await][Deferred.await] を読んだだけでは、逐次的なふるまいとなることに注意してください。
-これは、[await][Defferred.await] がコルーチンの実行を開始し完了を待つためであり、
+これは、 [await][Deferred.await] がコルーチンの実行を開始し完了を待つためであり、
 レイジーであることに求める有効な事例 (use case) ではありません。
 `async(start = CoroutineStart.LAZY)` が有効な場合とは、値の計算にサスペンド関数が含まれている場合に標準の `lazy` 関数の代替となることです。
 <!--
