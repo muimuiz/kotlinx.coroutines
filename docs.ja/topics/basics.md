@@ -1,6 +1,6 @@
 <!--- TEST_NAME BasicsGuideTest -->
-
 [//]: # (title: Coroutines basics)
+# コルーチンの基本
 
 この節ではコルーチン (coroutine) の基本コンセプトについて取り扱います。
 <!--This section covers basic coroutine concepts.-->
