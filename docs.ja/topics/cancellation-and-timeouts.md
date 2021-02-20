@@ -1,6 +1,7 @@
 <!--- TEST_NAME CancellationGuideTest -->
 
 [//]: # (title: Cancellation and timeouts)
+# キャンセルとタイムアウト
 
 この節では、コルーチンのキャンセルとタイムアウトを取り扱います。
 <!--This section covers coroutine cancellation and timeouts.-->
