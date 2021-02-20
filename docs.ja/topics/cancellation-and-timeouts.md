@@ -23,6 +23,23 @@ The [launch] function returns a [Job] that can be used to cancel the running cor
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
+    val job = launch {
+        repeat(1000) { i ->
+            println("job: I'm sleeping $i ...")
+            delay(500L)
+        }
+    }
+    delay(1300L) // すこし遅延を行います
+    println("main: I'm tired of waiting!")
+    job.cancel() // job をキャンセルします
+    job.join() // job の完了を待ちます 
+    println("main: Now I can quit.")
+}
+```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
 //sampleStart
     val job = launch {
         repeat(1000) { i ->
@@ -37,7 +54,7 @@ fun main() = runBlocking {
     println("main: Now I can quit.")
 //sampleEnd    
 }
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-01.kt) で入手できます。
@@ -60,7 +77,7 @@ main: Now I can quit.
 
 <!--- TEST -->
 
-main が `job.cancel` を呼び出すと、他方のコルーチンがキャンセルされるため、それからの出力はその後すぐにもうみられません。
+`main` が `job.cancel` を呼び出すと、他方のコルーチンがキャンセルされるため、それからの出力はその後すぐにもうみられません。
 [Job] には、[cancel][Job.cancel] と [join][Job.join] を組み合わせた拡張関数 [cancelAndJoin] もあります。
 <!--
 As soon as main invokes `job.cancel`, we don't see any output from the other coroutine because it was cancelled. 
@@ -89,6 +106,28 @@ example shows:
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
+    val startTime = System.currentTimeMillis()
+    val job = launch(Dispatchers.Default) {
+        var nextPrintTime = startTime
+        var i = 0
+        while (i < 5) { // 計算ループ、単に CPU を消費します
+            // 1 秒に 2 度、メッセージを表示します
+            if (System.currentTimeMillis() >= nextPrintTime) {
+                println("job: I'm sleeping ${i++} ...")
+                nextPrintTime += 500L
+            }
+        }
+    }
+    delay(1300L) // すこし遅延を行います
+    println("main: I'm tired of waiting!")
+    job.cancelAndJoin() // job をキャンセルしその完了を待ちます
+    println("main: Now I can quit.")
+}
+```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
 //sampleStart
     val startTime = System.currentTimeMillis()
     val job = launch(Dispatchers.Default) {
@@ -108,7 +147,7 @@ fun main() = runBlocking {
     println("main: Now I can quit.")
 //sampleEnd    
 }
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-02.kt) で入手できます。
@@ -157,6 +196,28 @@ Replace `while (i < 5)` in the previous example with `while (isActive)` and reru
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
+    val startTime = System.currentTimeMillis()
+    val job = launch(Dispatchers.Default) {
+        var nextPrintTime = startTime
+        var i = 0
+        while (isActive) { // キャンセル可能な計算ループ
+            // 1 秒に 2 度、メッセージを表示します
+            if (System.currentTimeMillis() >= nextPrintTime) {
+                println("job: I'm sleeping ${i++} ...")
+                nextPrintTime += 500L
+            }
+        }
+    }
+    delay(1300L) // すこし遅延を行います
+    println("main: I'm tired of waiting!")
+    job.cancelAndJoin() // job をキャンセルしその完了を待ちます
+    println("main: Now I can quit.")
+}
+```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
 //sampleStart
     val startTime = System.currentTimeMillis()
     val job = launch(Dispatchers.Default) {
@@ -176,7 +237,7 @@ fun main() = runBlocking {
     println("main: Now I can quit.")
 //sampleEnd    
 }
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-03.kt) で入手できます。
@@ -217,6 +278,26 @@ finalization actions normally when a coroutine is cancelled:
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
+    val job = launch {
+        try {
+            repeat(1000) { i ->
+                println("job: I'm sleeping $i ...")
+                delay(500L)
+            }
+        } finally {
+            println("job: I'm running finally")
+        }
+    }
+    delay(1300L) // すこし遅延を行います
+    println("main: I'm tired of waiting!")
+    job.cancelAndJoin() // job をキャンセルしその完了を待ちます
+    println("main: Now I can quit.")
+}
+```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
 //sampleStart
     val job = launch {
         try {
@@ -234,7 +315,7 @@ fun main() = runBlocking {
     println("main: Now I can quit.")
 //sampleEnd    
 }
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-04.kt) で入手できます。
@@ -282,6 +363,30 @@ rare case when you need to suspend in a cancelled coroutine you can wrap the cor
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
+    val job = launch {
+        try {
+            repeat(1000) { i ->
+                println("job: I'm sleeping $i ...")
+                delay(500L)
+            }
+        } finally {
+            withContext(NonCancellable) {
+                println("job: I'm running finally")
+                delay(1000L)
+                println("job: And I've just delayed for 1 sec because I'm non-cancellable")
+            }
+        }
+    }
+    delay(1300L) // すこし遅延を行います
+    println("main: I'm tired of waiting!")
+    job.cancelAndJoin() // job をキャンセルしその完了を待ちます
+    println("main: Now I can quit.")
+}
+```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
 //sampleStart
     val job = launch {
         try {
@@ -303,7 +408,7 @@ fun main() = runBlocking {
     println("main: Now I can quit.")
 //sampleEnd    
 }
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-05.kt) で入手できます。
@@ -344,6 +449,18 @@ Look at the following example:
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
+    withTimeout(1300L) {
+        repeat(1000) { i ->
+            println("I'm sleeping $i ...")
+            delay(500L)
+        }
+    }
+}
+```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
 //sampleStart
     withTimeout(1300L) {
         repeat(1000) { i ->
@@ -353,7 +470,7 @@ fun main() = runBlocking {
     }
 //sampleEnd
 }
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-06.kt) で入手できます。
@@ -403,6 +520,20 @@ that is similar to [withTimeout] but returns `null` on timeout instead of throwi
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
+    val result = withTimeoutOrNull(1300L) {
+        repeat(1000) { i ->
+            println("I'm sleeping $i ...")
+            delay(500L)
+        }
+        "Done" // この result が出る前にキャンセルされることになります
+    }
+    println("Result is $result")
+}
+```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
 //sampleStart
     val result = withTimeoutOrNull(1300L) {
         repeat(1000) { i ->
@@ -414,7 +545,7 @@ fun main() = runBlocking {
     println("Result is $result")
 //sampleEnd
 }
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-07.kt) で入手できます。
@@ -469,12 +600,38 @@ of the `withTimeout` block after a bit of delay and release it from outside.
 ```kotlin
 import kotlinx.coroutines.*
 
+var acquired = 0
+
+class Resource {
+    init { acquired++ } // リソースの取得
+    fun close() { acquired-- } // リソースの解放
+}
+
+fun main() {
+    runBlocking {
+        repeat(100_000) { // 10 万のコルーチンを起動します
+            launch { 
+                val resource = withTimeout(60) { // タイムアウトは 60 ms です
+                    delay(50) // 50 ms 遅延します
+                    Resource() // リソースを取得し、withTimeout ブロックから返却します
+                }
+                resource.close() // リソースを解放します
+            }
+        }
+    }
+    // runBlocking の外側で、すべてのコルーチンは完了しています
+    println(acquired) // 依然として取得したままのリソースの数を表示します
+}
+```
+<!--
+import kotlinx.coroutines.*
+
 //sampleStart
 var acquired = 0
 
 class Resource {
     init { acquired++ } // Acquire the resource
-    fun close() { acquired-- } // Release the resource
+    fun close() { acquired\-\- } // Release the resource
 }
 
 fun main() {
@@ -493,7 +650,7 @@ fun main() {
     println(acquired) // Print the number of resources still acquired
 }
 //sampleEnd
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-08.kt) で入手できます。
@@ -535,8 +692,39 @@ import kotlinx.coroutines.*
 var acquired = 0
 
 class Resource {
+    init { acquired++ } // リソースの取得
+    fun close() { acquired-- } // リソースの解放
+}
+
+fun main() {
+    runBlocking {
+        repeat(100_000) { // 10 万のコルーチンを起動します
+            launch { 
+                var resource: Resource? = null // まだ取得していません
+                try {
+                    withTimeout(60) { // タイムアウトは 60 ms です
+                        delay(50) // 50 ms 遅延します
+                        resource = Resource() // リソースを取得したなら変数に格納します
+                    }
+                    // ここでリソースを使った何か別の作業を行えます
+                } finally {  
+                    resource?.close() // リソースを取得していたなら解放します
+                }
+            }
+        }
+    }
+    // runBlocking の外側で、すべてのコルーチンは完了しています
+    println(acquired) // 依然として取得したままのリソースの数を表示します
+}
+```
+<!--
+import kotlinx.coroutines.*
+
+var acquired = 0
+
+class Resource {
     init { acquired++ } // Acquire the resource
-    fun close() { acquired-- } // Release the resource
+    fun close() { acquired\-\- } // Release the resource
 }
 
 fun main() {
@@ -561,7 +749,7 @@ fun main() {
     println(acquired) // Print the number of resources still acquired
 //sampleEnd
 }
-```
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-09.kt) で入手できます。
