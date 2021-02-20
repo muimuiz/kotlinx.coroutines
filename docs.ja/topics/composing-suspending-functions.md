@@ -128,18 +128,52 @@ Completed in 2017 ms
 
 <!--- TEST ARBITRARY_TIME -->
 
-## Concurrent using async
+## async を用いた並列処理
+<!--## Concurrent using async-->
 
+`doSomethingUsefulOne` と `doSomethingUsefulTwo` の呼び出しの間に依存性がなく、両者を __並列的__ (concurrently) に実行することでより早く答えを得たいとしたらどうでしょう？
+ここで助けとなるのが [async] です。
+<!--
 What if there are no dependencies between invocations of `doSomethingUsefulOne` and `doSomethingUsefulTwo` and
 we want to get the answer faster, by doing both _concurrently_? This is where [async] comes to help. 
- 
+-->
+
+概念的には、[async] は [launch] とよく似ています。
+これは軽量なスレッドであるところの別のコルーチンを開始し、それは他のコルーチンすべてとは並列に動作します。
+違いは `launch` が結果の値を [Job] を返して結果の値を伝えないのに対し、`async` は [Deferred]、すなわちあとで結果を与える約束を表している軽量の非ブロッキングな future を返すことです（訳注：future〔フューチャー〕または promise はここでのように並列処理において結果の取得を後回しとする仕組み）。
+先延ばしにされた値に対し最終的結果を得るためには、`.await()` を用いることができますが、`Deferred` は `Job` でもあるので、必要ならそれをキャンセルすることもできます。
+<!--
 Conceptually, [async] is just like [launch]. It starts a separate coroutine which is a light-weight thread 
 that works concurrently with all the other coroutines. The difference is that `launch` returns a [Job] and 
 does not carry any resulting value, while `async` returns a [Deferred] &mdash; a light-weight non-blocking future
 that represents a promise to provide a result later. You can use `.await()` on a deferred value to get its eventual result,
 but `Deferred` is also a `Job`, so you can cancel it if needed.
+-->
 
 ```kotlin
+import kotlinx.coroutines.*
+import kotlin.system.*
+
+fun main() = runBlocking<Unit> {
+    val time = measureTimeMillis {
+        val one = async { doSomethingUsefulOne() }
+        val two = async { doSomethingUsefulTwo() }
+        println("The answer is ${one.await() + two.await()}")
+    }
+    println("Completed in $time ms")
+}
+
+suspend fun doSomethingUsefulOne(): Int {
+    delay(1000L) // ここで何かしら有用なことを行っているふり
+    return 13
+}
+
+suspend fun doSomethingUsefulTwo(): Int {
+    delay(1000L) // ここも何かしら有用なことを行っているふり
+    return 29
+}
+```
+<!--
 import kotlinx.coroutines.*
 import kotlin.system.*
 
@@ -163,15 +197,18 @@ suspend fun doSomethingUsefulTwo(): Int {
     delay(1000L) // pretend we are doing something useful here, too
     return 29
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt).-->
+<!--{type="note"}-->
 
+これは次のような出力を出します。
+<!--
 It produces something like this:
-
+-->
 ```text
 The answer is 42
 Completed in 1017 ms
@@ -179,8 +216,12 @@ Completed in 1017 ms
 
 <!--- TEST ARBITRARY_TIME -->
 
+この 2 つのコルーチンは並列して実行されるので 2 倍速くなっています。
+コルーチンによる並列性は常に明示されることに注意してください。
+<!--
 This is twice as fast, because the two coroutines execute concurrently. 
 Note that concurrency with coroutines is always explicit.
+-->
 
 ## Lazily started async
 
