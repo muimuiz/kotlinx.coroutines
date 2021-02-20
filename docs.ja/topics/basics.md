@@ -198,14 +198,12 @@ wait (in a non-blocking way) until the background [Job] that we have launched is
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
     val job = GlobalScope.launch { // 新たなコルーチンを起動し、その Job への参照を保持する
         delay(1000L)
         println("World!")
     }
     println("Hello,")
     job.join() // 子のコルーチンが完了するまで待機する
-//sampleEnd    
 }
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
@@ -491,7 +489,6 @@ returns from the main function after some delay:
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
-//sampleStart
     GlobalScope.launch {
         repeat(1000) { i ->
             println("I'm sleeping $i ...")
@@ -499,7 +496,6 @@ fun main() = runBlocking {
         }
     }
     delay(1300L) // 遅延の後で単に終了する
-//sampleEnd    
 }
 ```
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
