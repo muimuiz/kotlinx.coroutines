@@ -62,27 +62,12 @@ time it takes to execute both suspending functions:
 <!--- CLEAR -->
 
 ```kotlin
-import kotlinx.coroutines.*
-import kotlin.system.*
-
-fun main() = runBlocking<Unit> {
     val time = measureTimeMillis {
         val one = doSomethingUsefulOne()
         val two = doSomethingUsefulTwo()
         println("The answer is ${one + two}")
     }
     println("Completed in $time ms")
-}
-
-suspend fun doSomethingUsefulOne(): Int {
-    delay(1000L) // ここで何かしら有用なことを行っているふり
-    return 13
-}
-
-suspend fun doSomethingUsefulTwo(): Int {
-    delay(1000L) // ここも何かしら有用なことを行っているふり
-    return 29
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -140,7 +125,7 @@ we want to get the answer faster, by doing both _concurrently_? This is where [a
 
 概念的には、[async] は [launch] とよく似ています。
 これは軽量なスレッドであるところの別のコルーチンを開始し、それは他のコルーチンすべてとは並列に動作します。
-違いは `launch` が結果の値を [Job] を返して結果の値を伝えないのに対し、`async` は [Deferred]、すなわちあとで結果を与える約束を表している軽量の非ブロッキングな future を返すことです（訳注：future〔フューチャー〕または promise はここでのように並列処理において結果の取得を後回しとする仕組み）。
+違いは `launch` が [Job] を返して結果の値を伝えないのに対し、`async` は [Deferred]、すなわち、あとで結果を与える約束を表している軽量の非ブロッキングな future を返すことです（訳注：future または promise はここでのように並列処理において結果の取得を後回しとする仕組み）。
 先延ばしにされた値に対し最終的結果を得るためには、`.await()` を用いることができますが、`Deferred` は `Job` でもあるので、必要ならそれをキャンセルすることもできます。
 <!--
 Conceptually, [async] is just like [launch]. It starts a separate coroutine which is a light-weight thread 
@@ -151,27 +136,12 @@ but `Deferred` is also a `Job`, so you can cancel it if needed.
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-import kotlin.system.*
-
-fun main() = runBlocking<Unit> {
     val time = measureTimeMillis {
         val one = async { doSomethingUsefulOne() }
         val two = async { doSomethingUsefulTwo() }
         println("The answer is ${one.await() + two.await()}")
     }
     println("Completed in $time ms")
-}
-
-suspend fun doSomethingUsefulOne(): Int {
-    delay(1000L) // ここで何かしら有用なことを行っているふり
-    return 13
-}
-
-suspend fun doSomethingUsefulTwo(): Int {
-    delay(1000L) // ここも何かしら有用なことを行っているふり
-    return 29
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -223,14 +193,31 @@ This is twice as fast, because the two coroutines execute concurrently.
 Note that concurrency with coroutines is always explicit.
 -->
 
-## Lazily started async
+## レイジーに開始される async
+<!--## Lazily started async-->
 
+オプションで、[async] の `start` パラメーターに [CoroutineStart.LAZY] を設定することにより [async] をレイジー (lazy) にすることができます（訳注：一般に lazy〔遅延〕はそれが必要となるときまで実際の実行を遅延するときに使われるキーワード）。
+このモードでは、コルーチンはその結果が [await][Deferred.await] により要求されたとき、あるいは `Job` の [start][Job.start] 関数が呼び出されたときからのみ開始されます。
+以下の例を実行してみましょう。
+<!--
 Optionally, [async] can be made lazy by setting its `start` parameter to [CoroutineStart.LAZY]. 
 In this mode it only starts the coroutine when its result is required by 
 [await][Deferred.await], or if its `Job`'s [start][Job.start] function 
 is invoked. Run the following example:
+-->
 
 ```kotlin
+    val time = measureTimeMillis {
+        val one = async(start = CoroutineStart.LAZY) { doSomethingUsefulOne() }
+        val two = async(start = CoroutineStart.LAZY) { doSomethingUsefulTwo() }
+        // なにかの計算
+        one.start() // 1 番目のものを起動する
+        two.start() // 2 番目のものを起動する
+        println("The answer is ${one.await() + two.await()}")
+    }
+    println("Completed in $time ms")
+```
+<!--
 import kotlinx.coroutines.*
 import kotlin.system.*
 
@@ -257,15 +244,18 @@ suspend fun doSomethingUsefulTwo(): Int {
     delay(1000L) // pretend we are doing something useful here, too
     return 29
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt).-->
+<!--{type="note"}-->
 
+これは次のような出力を出します。
+<!--
 It produces something like this:
-
+-->
 ```text
 The answer is 42
 Completed in 1017 ms
@@ -273,25 +263,54 @@ Completed in 1017 ms
 
 <!--- TEST ARBITRARY_TIME -->
 
+すなわち、ここでは 2 つのコルーチンが定義されていますが、前の例とは異なり実行されません。
+代わりに、[start][Job.start] を呼ぶことで実際いつ実行を開始するかについて、その制御はプログラマにまかされています。
+はじめに `one` を開始し、その後、`two` を開始して、さらにその後でこれら別々のコルーチンが完了するのを待ちます。
+<!--
 So, here the two coroutines are defined but not executed as in the previous example, but the control is given to
 the programmer on when exactly to start the execution by calling [start][Job.start]. We first 
 start `one`, then start `two`, and then await for the individual coroutines to finish. 
+-->
 
+はじめにそれぞれのコルーチンの [start][Job.start] を呼ぶことなく、
+単に `println` の中で [await][Deferred.await] を読んだだけでは、逐次的なふるまいとなることに注意してください。
+これは、[await][Defferred.await] がコルーチンの実行を開始し完了を待つためであり、
+レイジーであることに求める有効な事例 (use case) ではありません。
+`async(start = CoroutineStart.LAZY)` が有効な場合とは、値の計算にサスペンド関数が含まれている場合に標準の `lazy` 関数の代替となることです。
+<!--
 Note that if we just call [await][Deferred.await] in `println` without first calling [start][Job.start] on individual 
 coroutines, this will lead to sequential behavior, since [await][Deferred.await] starts the coroutine 
 execution and waits for its finish, which is not the intended use-case for laziness. 
 The use-case for `async(start = CoroutineStart.LAZY)` is a replacement for the 
 standard `lazy` function in cases when computation of the value involves suspending functions.
+-->
 
-## Async-style functions
+## async スタイルの関数
+<!--## Async-style functions-->
 
+明示的な [GlobalScope] 参照を持つ [async] コルーチン・ビルダーを用いて、
+`doSomethingUsefulOne` と `doSomethingUsefulTwo` を __非同期__ (asynchronously) に呼び出す async スタイルの関数を定義できます。
+こうした関数の名前に "...Async" の接尾をつけて、それらが非同期計算を始めるだけであり、結果を得るためには結果の遅延値を使う必要があるということを強調することにします。
+<!--
 We can define async-style functions that invoke `doSomethingUsefulOne` and `doSomethingUsefulTwo`
 _asynchronously_ using the [async] coroutine builder with an explicit [GlobalScope] reference.
 We name such functions with the 
 "...Async" suffix to highlight the fact that they only start asynchronous computation and one needs
 to use the resulting deferred value to get the result.
+-->
 
 ```kotlin
+// somethingUsefulOneAsync の返り値は Deferred<Int> です
+fun somethingUsefulOneAsync() = GlobalScope.async {
+    doSomethingUsefulOne()
+}
+
+// somethingUsefulTwoAsync の返り値は Deferred<Int> です
+fun somethingUsefulTwoAsync() = GlobalScope.async {
+    doSomethingUsefulTwo()
+}
+```
+<!--
 // The result type of somethingUsefulOneAsync is Deferred<Int>
 fun somethingUsefulOneAsync() = GlobalScope.async {
     doSomethingUsefulOne()
@@ -301,17 +320,41 @@ fun somethingUsefulOneAsync() = GlobalScope.async {
 fun somethingUsefulTwoAsync() = GlobalScope.async {
     doSomethingUsefulTwo()
 }
-```
+-->
 
+`xxxAsync` 関数は __サスペンド__ 関数では「ない」ことに注意しましょう。
+これらはどこからでも用いることができます。
+しかし、これを用いることは、常に呼び出したコードに対してその動作が非同期的（ここでは __並列的__ の意味）に実行されることを意味します。
+<!--
 Note that these `xxxAsync` functions are **not** _suspending_ functions. They can be used from anywhere.
 However, their use always implies asynchronous (here meaning _concurrent_) execution of their action
 with the invoking code.
- 
+-->
+
+以下の例は、コルーチン外でのこれらの使用例を示しています。
+<!-- 
 The following example shows their use outside of coroutine:
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+// note that we don't have `runBlocking` to the right of `main` in this example
+fun main() {
+    val time = measureTimeMillis {
+        // we can initiate async actions outside of a coroutine
+        val one = somethingUsefulOneAsync()
+        val two = somethingUsefulTwoAsync()
+        // but waiting for a result must involve either suspending or blocking.
+        // here we use `runBlocking { ... }` to block the main thread while waiting for the result
+        runBlocking {
+            println("The answer is ${one.await() + two.await()}")
+        }
+    }
+    println("Completed in $time ms")
+}
+```
+<!--
 import kotlinx.coroutines.*
 import kotlin.system.*
 
@@ -349,17 +392,19 @@ suspend fun doSomethingUsefulTwo(): Int {
     delay(1000L) // pretend we are doing something useful here, too
     return 29
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt).
 >
-{type="note"}
+<!--{type="note"}-->
 
-<!--- TEST ARBITRARY_TIME
+<!--- TEST ARBITRARY_TIME-->
+```Text
 The answer is 42
 Completed in 1085 ms
--->
+```
+<!-- -->
 
 > This programming style with async functions is provided here only for illustration, because it is a popular style
 > in other programming languages. Using this style with Kotlin coroutines is **strongly discouraged** for the
