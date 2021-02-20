@@ -1,6 +1,7 @@
 <!--- TEST_NAME DispatcherGuideTest -->
 
 [//]: # (title: Coroutine context and dispatchers)
+# コルーチンのコンテキストとディスパッチャー
 
 コルーチンは常に、Kotlin 標準ライブラリ (Kotlin standard library) で定義された
 [CoroutineContext](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines/-coroutine-context/)
