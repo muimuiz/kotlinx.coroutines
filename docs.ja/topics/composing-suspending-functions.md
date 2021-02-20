@@ -596,7 +596,7 @@ suspend fun failedConcurrentSum(): Int = coroutineScope {
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-06.kt).-->
 <!--{type="note"}-->
 
-子の一方（ここでは `two`）が失敗したとき、最初の `async` と待機中の親の療法がキャンセルされることに注目してください。
+子の一方（ここでは `two`）が失敗したとき、最初の `async` と待機中の親の両方がキャンセルされることに注目してください。
 <!--
 Note how both the first `async` and the awaiting parent are cancelled on failure of one of the children
 (namely, `two`):
