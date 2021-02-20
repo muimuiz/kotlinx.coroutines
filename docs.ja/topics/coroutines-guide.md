@@ -41,18 +41,18 @@ In order to use coroutines as well as follow the examples in this guide, you nee
 <!--## Table of contents-->
 
 * [コルーチンの基本](coroutines-basics.md) [Coroutines basics](https://kotlinlang.org/docs/coroutines-basics.md)
-* [Tutorial: Create a basic coroutine](https://kotlinlang.org/docs/coroutines-basic-jvm.md)
+* [Tutorial: Create a basic coroutine](https://kotlinlang.org/docs/coroutines-basic-jvm.html)
 * [Hands-on: Intro to coroutines and channels](https://play.kotlinlang.org/hands-on/Introduction%20to%20Coroutines%20and%20Channels)
-* [キャンセルとタイムアウト](cancellation-and-timeouts.md) [Cancellation and timeouts](https://kotlinlang.org/docs/cancellation-and-timeouts.md)
-* [サスペンド関数を構成する](composing-suspending-functions.md) [Composing suspending functions](https://kotlinlang.org/docs/composing-suspending-functions.md)
-* [コルーチンのコンテキストとディスパッチャー](coroutine-context-and-dispatchers.md) [Coroutine context and dispatchers](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.md)
-* [Asynchronous Flow](https://kotlinlang.org/docs/flow.md)
-* [Channels](https://kotlinlang.org/docs/channels.md)
-* [Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.md)
-* [Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.md)
-* [Select expression (experimental)](https://kotlinlang.org/docs/select-expression.md)
-* [Tutorial: Debug coroutines using IntelliJ IDEA](https://kotlinlang.org/docs/debug-coroutines-with-idea.md)
-* [Tutorial: Debug Kotlin Flow using IntelliJ IDEA](https://kotlinlang.org/docs/debug-flow-with-idea.md)
+* [キャンセルとタイムアウト](cancellation-and-timeouts.md) [Cancellation and timeouts](https://kotlinlang.org/docs/cancellation-and-timeouts.html)
+* [サスペンド関数を構成する](composing-suspending-functions.md) [Composing suspending functions](https://kotlinlang.org/docs/composing-suspending-functions.html)
+* [コルーチンのコンテキストとディスパッチャー](coroutine-context-and-dispatchers.md) [Coroutine context and dispatchers](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html)
+* [Asynchronous Flow](https://kotlinlang.org/docs/flow.html)
+* [Channels](https://kotlinlang.org/docs/channels.html)
+* [Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.html)
+* [Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html)
+* [Select expression (experimental)](https://kotlinlang.org/docs/select-expression.html)
+* [Tutorial: Debug coroutines using IntelliJ IDEA](https://kotlinlang.org/docs/debug-coroutines-with-idea.html)
+* [Tutorial: Debug Kotlin Flow using IntelliJ IDEA](https://kotlinlang.org/docs/debug-flow-with-idea.html)
 
 ## 追加の参考資料
 <!--## Additional references-->
