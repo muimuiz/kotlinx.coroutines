@@ -238,24 +238,44 @@ function is using.
 -->
 <!--{type="note"}-->
 
-## Debugging coroutines and threads
+## コルーチンとスレッドをデバッグする
+<!--## Debugging coroutines and threads-->
 
+コルーチンはあるスレッド上でサスペンドされ、別のスレッド上で再開されることがあります。
+単一スレッドのディスパッチャーにおいてでも、特別な道具がなければ、
+コルーチンがいつ、どこで、何をしているか把握することは困難かもしれません。
+<!--
 Coroutines can suspend on one thread and resume on another thread. 
 Even with a single-threaded dispatcher it might be hard to
 figure out what the coroutine was doing, where, and when if you don't have special tooling. 
+-->
 
-### Debugging with IDEA
+### IDEA を用いたデバッグ
+<!--### Debugging with IDEA-->
 
+Kotlin プラグインのコルーチン・デバッガーは、IntelliJ IDEA でのコルーチンのデバッグをやさしくします。
+<!--
 The Coroutine Debugger of the Kotlin plugin simplifies debugging coroutines in IntelliJ IDEA.
+-->
 
+> デバッグは `kotlinx-coroutines-core` がバージョン 1.3.8 以降で動作します。
+>
+<!--
 > Debugging works for versions 1.3.8 or later of `kotlinx-coroutines-core`.
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
+「デバッグ」ツール・ウィンドウに「コルーチン」タブがあります。
+このタブで、現在動作しているコルーチンとサスペンドされているコルーチン、両者の情報を得ることができます。
+コルーチンは、それが動作しているディスパッチャーごとにグループ分けされています。
+<!--
 The **Debug** tool window contains the **Coroutines** tab. In this tab, you can find information about both currently running and suspended coroutines. 
 The coroutines are grouped by the dispatcher they are running on.
+-->
 
-![Debugging coroutines](coroutine-idea-debugging-1.png)
+![コルーチンをデバッグする](https://kotlinlang.org/docs/images/coroutine-idea-debugging-1.png)
+<!--![Debugging coroutines](coroutine-idea-debugging-1.png)-->
 
 With the coroutine debugger, you can:
 * Check the state of each coroutine.
