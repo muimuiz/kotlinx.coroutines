@@ -1,6 +1,7 @@
 <!--- TEST_NAME ComposingGuideTest -->
 
 [//]: # (title: Composing suspending functions)
+# サスペンド関数を構成する
 
 この節ではサスペンド関数 (suspending function) を作るさまざまなアプローチを取り扱います。
 <!--
