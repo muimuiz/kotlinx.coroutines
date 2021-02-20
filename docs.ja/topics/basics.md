@@ -308,7 +308,7 @@ Having to manually keep references to all the launched coroutines and [join][Job
 コードに構造化された並列性 (structured concurrency) を使うことです。
 ふつうにスレッドの間で行うのと同じように（スレッドは常にグローバルです）[GlobalScope] においてコルーチンを起動する代わりに、
 いま実行している操作の特定のスコープにおいてコルーチンを起動することができます。
-（訳注：構造化並列性 \[structured concurrency\] は並列に実行される〔同時実行される〕関数が明確に入れ子になっており、呼ばれた側が終了するまで呼び出した側が終了しないことをいう。）
+（訳注：Structured concurrency は並列に実行される〔同時実行される〕関数が明確に入れ子になっており、呼ばれた側が終了するまで呼び出した側が終了しないことをいう。参照：[Nathaniel J. Smith, Notes on structured concurrency, or: Go statement considered harmful](https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/)）
 <!--
 There is a better solution. We can use structured concurrency in our code. 
 Instead of launching coroutines in the [GlobalScope], just like we usually do with threads (threads are always global), 
