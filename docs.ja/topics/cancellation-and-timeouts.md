@@ -20,9 +20,6 @@ The [launch] function returns a [Job] that can be used to cancel the running cor
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     val job = launch {
         repeat(1000) { i ->
             println("job: I'm sleeping $i ...")
@@ -34,7 +31,6 @@ fun main() = runBlocking {
     job.cancel() // job をキャンセルします
     job.join() // job の完了を待ちます 
     println("main: Now I can quit.")
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -103,9 +99,6 @@ example shows:
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     val startTime = System.currentTimeMillis()
     val job = launch(Dispatchers.Default) {
         var nextPrintTime = startTime
@@ -122,7 +115,6 @@ fun main() = runBlocking {
     println("main: I'm tired of waiting!")
     job.cancelAndJoin() // job をキャンセルしその完了を待ちます
     println("main: Now I can quit.")
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -193,9 +185,6 @@ Replace `while (i < 5)` in the previous example with `while (isActive)` and reru
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     val startTime = System.currentTimeMillis()
     val job = launch(Dispatchers.Default) {
         var nextPrintTime = startTime
@@ -212,7 +201,6 @@ fun main() = runBlocking {
     println("main: I'm tired of waiting!")
     job.cancelAndJoin() // job をキャンセルしその完了を待ちます
     println("main: Now I can quit.")
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -275,9 +263,6 @@ finalization actions normally when a coroutine is cancelled:
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     val job = launch {
         try {
             repeat(1000) { i ->
@@ -292,7 +277,6 @@ fun main() = runBlocking {
     println("main: I'm tired of waiting!")
     job.cancelAndJoin() // job をキャンセルしその完了を待ちます
     println("main: Now I can quit.")
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -360,9 +344,6 @@ rare case when you need to suspend in a cancelled coroutine you can wrap the cor
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     val job = launch {
         try {
             repeat(1000) { i ->
@@ -381,7 +362,6 @@ fun main() = runBlocking {
     println("main: I'm tired of waiting!")
     job.cancelAndJoin() // job をキャンセルしその完了を待ちます
     println("main: Now I can quit.")
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -446,16 +426,12 @@ Look at the following example:
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     withTimeout(1300L) {
         repeat(1000) { i ->
             println("I'm sleeping $i ...")
             delay(500L)
         }
     }
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -517,9 +493,6 @@ that is similar to [withTimeout] but returns `null` on timeout instead of throwi
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     val result = withTimeoutOrNull(1300L) {
         repeat(1000) { i ->
             println("I'm sleeping $i ...")
@@ -528,7 +501,6 @@ fun main() = runBlocking {
         "Done" // この result が出る前にキャンセルされることになります
     }
     println("Result is $result")
-}
 ```
 <!--
 import kotlinx.coroutines.*
@@ -598,8 +570,6 @@ of the `withTimeout` block after a bit of delay and release it from outside.
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
 var acquired = 0
 
 class Resource {
@@ -687,16 +657,6 @@ from the `withTimeout` block.
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-var acquired = 0
-
-class Resource {
-    init { acquired++ } // リソースの取得
-    fun close() { acquired-- } // リソースの解放
-}
-
-fun main() {
     runBlocking {
         repeat(100_000) { // 10 万のコルーチンを起動します
             launch { 
@@ -715,7 +675,6 @@ fun main() {
     }
     // runBlocking の外側で、すべてのコルーチンは完了しています
     println(acquired) // 依然として取得したままのリソースの数を表示します
-}
 ```
 <!--
 import kotlinx.coroutines.*
