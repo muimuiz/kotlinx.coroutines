@@ -247,7 +247,7 @@ suspend fun doSomethingUsefulTwo(): Int {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt) で入手できます。
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt).-->
 <!--{type="note"}-->
@@ -339,14 +339,14 @@ The following example shows their use outside of coroutine:
 <!--- CLEAR -->
 
 ```kotlin
-// note that we don't have `runBlocking` to the right of `main` in this example
+// この例では `main` の右に `runBlocking` がない（訳注：メイン・コルーチンを作らない）ことに注意
 fun main() {
     val time = measureTimeMillis {
-        // we can initiate async actions outside of a coroutine
+        // コルーチンの外側で async 動作を開始できます。
         val one = somethingUsefulOneAsync()
         val two = somethingUsefulTwoAsync()
-        // but waiting for a result must involve either suspending or blocking.
-        // here we use `runBlocking { ... }` to block the main thread while waiting for the result
+        // しかし、結果を待つにはサスペンドするかブロッキングするかどちらかが必要となります。
+        // ここでは、結果を待っている間、メイン・スレッドをブロッキングするよう `runBlocking { ... }` を用います
         runBlocking {
             println("The answer is ${one.await() + two.await()}")
         }
@@ -395,8 +395,9 @@ suspend fun doSomethingUsefulTwo(): Int {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt) で入手できます。
 >
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt).-->
 <!--{type="note"}-->
 
 <!--- TEST ARBITRARY_TIME-->
@@ -406,20 +407,37 @@ Completed in 1085 ms
 ```
 <!-- -->
 
+> ここでの async 関数を用いたプログラミングのスタイルは、
+> 他のプログラミング言語では一般的なスタイルであることから、説明のためだけに与えられています。
+> Kotlin でこのスタイルを用いることは、以下に説明する理由により「まったくお勧めできません」。
+>
+<!--
 > This programming style with async functions is provided here only for illustration, because it is a popular style
 > in other programming languages. Using this style with Kotlin coroutines is **strongly discouraged** for the
 > reasons explained below.
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
+`val one = somethingUsefulOneAsync()` の行と `one.await()` の式との間で、
+コードに何かしらの論理的エラーがあり、プログラムが例外を送出して、
+プログラムにより実行中の操作が中断したなら何が起こるか考えてみましょう。
+通常なら、グローバルなエラー・ハンドラーがこうした例外を補足して、
+開発者のためにエラーを記録し報告する一方で、プログラムはそれ以外の操作を継続できるでしょう。
+しかしここでは、それを開始した操作が中断されているにも関わらず、
+`somethingUsefulOneAsync` が依然としてバックグラウンドで実行されています。
+この問題は、以下の節で示すように構造化並列性 (structured concurrency) の元では起こりません。
+<!--
 Consider what happens if between the `val one = somethingUsefulOneAsync()` line and `one.await()` expression there is some logic
 error in the code and the program throws an exception and the operation that was being performed by the program aborts. 
 Normally, a global error-handler could catch this exception, log and report the error for developers, but the program 
 could otherwise continue doing other operations. But here we have `somethingUsefulOneAsync` still running in the background,
 even though the operation that initiated it was aborted. This problem does not happen with structured
 concurrency, as shown in the section below.
+-->
 
-## Structured concurrency with async 
+## async のある構造化並列性
+<!--## Structured concurrency with async-->
 
 Let us take the [Concurrent using async](#concurrent-using-async) example and extract a function that 
 concurrently performs `doSomethingUsefulOne` and `doSomethingUsefulTwo` and returns the sum of their results.
