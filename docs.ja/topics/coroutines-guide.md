@@ -40,7 +40,7 @@ In order to use coroutines as well as follow the examples in this guide, you nee
 ## もくじ
 <!--## Table of contents-->
 
-* [コルーチンの基本](coroutines-basics.md) [Coroutines basics](https://kotlinlang.org/docs/coroutines-basics.md)
+* [コルーチンの基本](basics.md) [Coroutines basics](https://kotlinlang.org/docs/coroutines-basics.html)
 * [Tutorial: Create a basic coroutine](https://kotlinlang.org/docs/coroutines-basic-jvm.html)
 * [Hands-on: Intro to coroutines and channels](https://play.kotlinlang.org/hands-on/Introduction%20to%20Coroutines%20and%20Channels)
 * [キャンセルとタイムアウト](cancellation-and-timeouts.md) [Cancellation and timeouts](https://kotlinlang.org/docs/cancellation-and-timeouts.html)
