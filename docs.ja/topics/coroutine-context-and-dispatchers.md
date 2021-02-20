@@ -1,6 +1,6 @@
 <!--- TEST_NAME DispatcherGuideTest -->
 
-[//]: # (title: Coroutine context and dispatchers)
+<!--[//]: # (title: Coroutine context and dispatchers)-->
 # コルーチンのコンテキストとディスパッチャー
 
 コルーチンは常に、Kotlin 標準ライブラリ (Kotlin standard library) で定義された
@@ -140,19 +140,45 @@ In a real application it must be either released, when no longer needed, using t
 function, or stored in a top-level variable and reused throughout the application.  
 -->
 
-## Unconfined vs confined dispatcher
- 
+## 非制約と制約されたディスパッチャー
+<!--## Unconfined vs confined dispatcher-->
+
+[Dispatchers.Unconfined] コルーチン・ディスパッチャーは、
+呼び出したスレッドでコルーチンを開始しますが、最初のサスペンド時点までです。
+サスペンド後は、起動されたサスペンド関数により完全に決定されるスレッドでコルーチンを再開します。
+非制約ディスパッチャーは、CPU の時間を消費せず、
+（UI のような）特定スレッドに制限された共有データも更新しないようなコルーチンに適しています。
+<!--
 The [Dispatchers.Unconfined] coroutine dispatcher starts a coroutine in the caller thread, but only until the
 first suspension point. After suspension it resumes the coroutine in the thread that is fully determined by the
 suspending function that was invoked. The unconfined dispatcher is appropriate for coroutines which neither
 consume CPU time nor update any shared data (like UI) confined to a specific thread. 
+-->
 
+一方において、ディスパッチャーはデフォルトで外側の [CoroutineScope] から引き継がれます。
+特に [runBlocking] コルーチンに対するデフォルト・ディスパッチャーは、起動したスレッドに制限されます。
+この継承により、予測可能な FIFO スケジューリングのあるこのスレッドに制限された実行を行うという効果があります。
+<!--
 On the other side, the dispatcher is inherited from the outer [CoroutineScope] by default. 
 The default dispatcher for the [runBlocking] coroutine, in particular,
 is confined to the invoker thread, so inheriting it has the effect of confining execution to
 this thread with predictable FIFO scheduling.
+-->
 
 ```kotlin
+    launch(Dispatchers.Unconfined) { // 制約されない ―― メイン・スレッドで作業することになる
+        println("Unconfined      : I'm working in thread ${Thread.currentThread().name}")
+        delay(500)
+        println("Unconfined      : After delay in thread ${Thread.currentThread().name}")
+    }
+    launch { // 親のコンテキスト、メイン runBlocking コルーチン
+        println("main runBlocking: I'm working in thread ${Thread.currentThread().name}")
+        delay(1000)
+        println("main runBlocking: After delay in thread ${Thread.currentThread().name}")
+    }
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking<Unit> {
@@ -169,14 +195,16 @@ fun main() = runBlocking<Unit> {
     }
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-02.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-02.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-02.kt).-->
+<!--{type="note"}-->
 
-Produces the output: 
+出力は次のようです。
+<!--Produces the output: -->
  
 ```text
 Unconfined      : I'm working in thread main
@@ -186,17 +214,29 @@ main runBlocking: After delay in thread main
 ```
 
 <!--- TEST LINES_START -->
- 
+
+このように、`runBlocking {...}` から引き継いだコンテキストをもつコルーチンは
+`main` スレッドにおいて実行を続けますが、
+非制約のコルーチンは [delay] 関数が用いられているデフォルト実行 (default executor) スレッドで再開します。
+<!--
 So, the coroutine with the context inherited from `runBlocking {...}` continues to execute
 in the `main` thread, while the unconfined one resumes in the default executor thread that the [delay]
 function is using.
+-->
 
+> 非制約ディスパッチャーは、後で実行されるコルーチンのディスパッチが必要ないような
+> 一般的ではない特定の場合<!--certain corner cases-->に役立つ高度な仕組みです。
+> でなければ、コルーチンのある操作は直ちに実行されねばならないため、望ましくない副作用が生じます。
+> 非制約ディスパッチャーは一般的なコードで利用されるべきではありません。
+>
+<!--
 > The unconfined dispatcher is an advanced mechanism that can be helpful in certain corner cases where
 > dispatching of a coroutine for its execution later is not needed or produces undesirable side-effects,
 > because some operation in a coroutine must be performed right away. 
 > The unconfined dispatcher should not be used in general code. 
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
 ## Debugging coroutines and threads
 
