@@ -23,6 +23,18 @@ fun main() {
     Thread.sleep(2000L) // JVM を生かしたままとする（訳注：プログラムを終了させない）ためメイン・スレッドを 2 秒間停止します
 }
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() {
+    GlobalScope.launch { // launch a new coroutine in background and continue
+        delay(1000L) // non-blocking delay for 1 second (default time unit is ms)
+        println("World!") // print after delay
+    }
+    println("Hello,") // main thread continues while coroutine is delayed
+    Thread.sleep(2000L) // block main thread for 2 seconds to keep JVM alive
+}
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-01.kt) で入手できます。
@@ -103,6 +115,20 @@ fun main() {
     } 
 }
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() { 
+    GlobalScope.launch { // launch a new coroutine in background and continue
+        delay(1000L)
+        println("World!")
+    }
+    println("Hello,") // main thread continues here immediately
+    runBlocking {     // but this expression blocks the main thread
+        delay(2000L)  // ... while we delay for 2 seconds to keep JVM alive
+    } 
+}
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-02.kt) で入手できます。
@@ -142,6 +168,18 @@ fun main() = runBlocking<Unit> { // main コルーチンを開始します
     delay(2000L)      // JVM を生かしたままとするため 2 秒間遅延します
 }
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking<Unit> { // start main coroutine
+    GlobalScope.launch { // launch a new coroutine in background and continue
+        delay(1000L)
+        println("World!")
+    }
+    println("Hello,") // main coroutine continues here immediately
+    delay(2000L)      // delaying for 2 seconds to keep JVM alive
+}
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-03.kt) で入手できます。
@@ -181,6 +219,14 @@ class MyTest {
     }
 }
 ```
+<!--
+class MyTest {
+    @Test
+    fun testMySuspendingFunction() = runBlocking<Unit> {
+        // here we can use suspending functions using any assertion style that we like
+    }
+}
+-->
 
 <!--- CLEAR -->
 
@@ -195,17 +241,27 @@ wait (in a non-blocking way) until the background [Job] that we have launched is
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     val job = GlobalScope.launch { // 新たなコルーチンを起動し、その Job への参照を保持する
         delay(1000L)
         println("World!")
     }
     println("Hello,")
     job.join() // 子のコルーチンが完了するまで待機する
-}
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
+//sampleStart
+    val job = GlobalScope.launch { // launch a new coroutine and keep a reference to its Job
+        delay(1000L)
+        println("World!")
+    }
+    println("Hello,")
+    job.join() // wait until child coroutine completes
+//sampleEnd    
+}
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-04.kt) で入手できます。
@@ -283,6 +339,17 @@ fun main() = runBlocking { // this: CoroutineScope
     println("Hello,")
 }
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking { // this: CoroutineScope
+    launch { // launch a new coroutine in the scope of runBlocking
+        delay(1000L)
+        println("World!")
+    }
+    println("Hello,")
+}
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-05.kt) で入手できます。
@@ -346,6 +413,28 @@ fun main() = runBlocking { // this: CoroutineScope
     println("Coroutine scope is over") // この行は nested launch が完了するまで出力されません
 }
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking { // this: CoroutineScope
+    launch { 
+        delay(200L)
+        println("Task from runBlocking")
+    }
+    
+    coroutineScope { // Creates a coroutine scope
+        launch {
+            delay(500L) 
+            println("Task from nested launch")
+        }
+    
+        delay(100L)
+        println("Task from coroutine scope") // This line will be printed before the nested launch
+    }
+    
+    println("Coroutine scope is over") // This line is not printed until the nested launch completes
+}
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-06.kt) で入手できます。
@@ -403,6 +492,20 @@ suspend fun doWorld() {
     println("World!")
 }
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
+    launch { doWorld() }
+    println("Hello,")
+}
+
+// this is your first suspending function
+suspend fun doWorld() {
+    delay(1000L)
+    println("World!")
+}
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-07.kt) で入手できます。
@@ -456,6 +559,18 @@ fun main() = runBlocking {
     }
 }
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
+    repeat(100_000) { // launch a lot of coroutines
+        launch {
+            delay(5000L)
+            print(".")
+        }
+    }
+}
+-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-08.kt) で入手できます。
 >
@@ -486,9 +601,6 @@ returns from the main function after some delay:
 -->
 
 ```kotlin
-import kotlinx.coroutines.*
-
-fun main() = runBlocking {
     GlobalScope.launch {
         repeat(1000) { i ->
             println("I'm sleeping $i ...")
@@ -496,8 +608,22 @@ fun main() = runBlocking {
         }
     }
     delay(1300L) // 遅延の後で単に終了する
-}
 ```
+<!--
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
+//sampleStart
+    GlobalScope.launch {
+        repeat(1000) { i ->
+            println("I'm sleeping $i ...")
+            delay(500L)
+        }
+    }
+    delay(1300L) // just quit after delay
+//sampleEnd    
+}
+-->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-09.kt) で入手できます。
