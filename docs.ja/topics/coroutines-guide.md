@@ -6,7 +6,7 @@ Kotlin は言語として、
 その標準ライブラリーに最小限の低レベル API しか提供していません。
 同様の能力をもった他の多くの言語とは異なって、`async` と `await` は Kotlin のキーワードではなく、
 標準ライブラリーの一部にもなっていません。
-さらに、Kotlin の __サスペンド関数__ (suspending function) の概念は、
+また、Kotlin の __サスペンド関数__ (suspending function) の概念は、
 future や promise よりも安全でエラーの生じにくい非同期操作の抽象化を提供しています。
 <!--
 Kotlin, as a language, provides only minimal low-level APIs in its standard library to enable various other 
