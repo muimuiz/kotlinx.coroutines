@@ -519,18 +519,51 @@ Note that [isActive] in [CoroutineScope] is just a convenient shortcut for
 `coroutineContext[Job]?.isActive == true`.
 -->
 
-## Children of a coroutine
+## コルーチンの子
+<!--## Children of a coroutine-->
 
+あるコルーチンが別のコルーチンの [CoroutineScope] で起動されたとき、
+それは [CoroutineScope.coroutineContext] を通じてコンテキストを引き継ぎ、
+新しいコルーチンの [Job] は親のコルーチンの Job の __子__ (child) となります。
+親のコルーチンがキャンセルされると、その __子__ のコルーチンもすべて再帰的にキャンセルされます。
+<!--
 When a coroutine is launched in the [CoroutineScope] of another coroutine,
 it inherits its context via [CoroutineScope.coroutineContext] and 
 the [Job] of the new coroutine becomes
 a _child_ of the parent coroutine's job. When the parent coroutine is cancelled, all its children
 are recursively cancelled, too. 
+-->
 
+しかし、[GlobalScope] がコルーチンの起動に用いられると、新しいコルーチンの Job に対する親はいません。
+そのため、それを起動したスコープに縛られることなく、独立して操作を行います。
+<!--
 However, when [GlobalScope] is used to launch a coroutine, there is no parent for the job of the new coroutine.
 It is therefore not tied to the scope it was launched from and operates independently.
+-->
 
 ```kotlin
+    // 到着リクエストのようなものを処理するコルーチンを起動します
+    val request = launch {
+        // 2つの Job を作ります。ひとつは GlobalScope を用い、
+        GlobalScope.launch {
+            println("job1: I run in GlobalScope and execute independently!")
+            delay(1000)
+            println("job1: I am not affected by cancellation of the request")
+        }
+        // もうひとつは親のコンテキストを引き継ぎます
+        launch {
+            delay(100)
+            println("job2: I am a child of the request coroutine")
+            delay(1000)
+            println("job2: I will not execute this line if my parent request is cancelled")
+        }
+    }
+    delay(500)
+    request.cancel() // リクエストの処理をキャンセルします
+    delay(1000) // 何が起こるか知るため、1 秒待ちます
+    println("main: Who has survived request cancellation?")
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking<Unit> {
@@ -557,14 +590,18 @@ fun main() = runBlocking<Unit> {
     println("main: Who has survived request cancellation?")
 //sampleEnd
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-06.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-06.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-06.kt).-->
+<!--{type="note"}-->
 
+このコードの出力は次のようです。
+<!--
 The output of this code is:
+-->
 
 ```text
 job1: I run in GlobalScope and execute independently!
