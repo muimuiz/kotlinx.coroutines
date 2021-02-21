@@ -465,19 +465,27 @@ same coroutine, as you can see in the output below:
 
 <!--- TEST -->
 
-この例では、[newSingleThreadContext] で作成したスレッドがもはや必要なくなったとき、
+この例では、[newSingleThreadContext] を用いて作成したスレッドがもはや必要なくなったとき、
 それを解放するために Kotlin 標準ライブラリーにある `use` 関数を利用していることにも注目してください。
 <!--
 Note that this example also uses the `use` function from the Kotlin standard library to release threads
 created with [newSingleThreadContext] when they are no longer needed. 
 -->
 
-## Job in the context
+## コンテキストの Job
+<!--## Job in the context-->
 
+コルーチンの [Job] はそのコンテキストの一部であり、
+`coroutineContext[Job]` 式を用いてそれをたぐり寄せることができます。
+<!--
 The coroutine's [Job] is part of its context, and can be retrieved from it 
 using the `coroutineContext[Job]` expression:
+-->
 
 ```kotlin
+    println("My job is ${coroutineContext[Job]}")
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking<Unit> {
@@ -485,14 +493,18 @@ fun main() = runBlocking<Unit> {
     println("My job is ${coroutineContext[Job]}")
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-05.kt).
-> 
-{type="note"}
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-05.kt) で入手できます。
+>
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-05.kt).-->
+<!--{type="note"}-->
 
+[デバッグ・モード](#コルーチンとスレッドをデバッグする) では、次のような出力となります。
+<!--
 In the [debug mode](#debugging-coroutines-and-threads), it outputs something like this:
+-->
 
 ```
 My job is "coroutine#1":BlockingCoroutine{Active}@6d311334
@@ -500,8 +512,12 @@ My job is "coroutine#1":BlockingCoroutine{Active}@6d311334
 
 <!--- TEST lines.size == 1 && lines[0].startsWith("My job is \"coroutine#1\":BlockingCoroutine{Active}@") -->
 
+[CoroutineScope] における [isActive] は、
+単に `coroutineContext[Job]?.isActive == true` の便利な簡略表記であることに注意しましょう。
+<!--
 Note that [isActive] in [CoroutineScope] is just a convenient shortcut for
 `coroutineContext[Job]?.isActive == true`.
+-->
 
 ## Children of a coroutine
 
