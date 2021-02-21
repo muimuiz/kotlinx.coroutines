@@ -266,7 +266,7 @@ The Coroutine Debugger of the Kotlin plugin simplifies debugging coroutines in I
 -->
 <!--{type="note"}-->
 
-「デバッグ」ツール・ウィンドウに「コルーチン」タブがあります。
+**Debug** ツール・ウィンドウに **Coroutines** タブがあります。
 このタブで、現在動作しているコルーチンとサスペンドされているコルーチン、両者の情報を得ることができます。
 コルーチンは、それが動作しているディスパッチャーごとにグループ分けされています。
 <!--
@@ -274,19 +274,32 @@ The **Debug** tool window contains the **Coroutines** tab. In this tab, you can 
 The coroutines are grouped by the dispatcher they are running on.
 -->
 
-![コルーチンをデバッグする](https://kotlinlang.org/docs/images/coroutine-idea-debugging-1.png)
+![コルーチンをデバッグする（IDEA におけるデバッグ画面）](https://kotlinlang.org/docs/images/coroutine-idea-debugging-1.png)
 <!--![Debugging coroutines](coroutine-idea-debugging-1.png)-->
 
+コルーチン・デバッガーでは次のことが行なえます。
+* 各コルーチンの状態をチェックします。
+* 動作中のコルーチンとサスペンドされたコルーチン、両者の局所変数とキャプチャーされた変数の値を確認できます。
+* 完全なコルーチン生成スタックとコルーチン内部のコール・スタックとを確認できます。このスタックは通常のデバッグ中には失われてしまうであろうものも含めた変数の値を持つすべてのフレームを含んでいます。
+* 各コルーチンとそのスタックの状態を含む完全なレポートが得られます。これを得るためには、**Coroutines** タブ内部で右クリックし、その後 **Get Coroutines Dump** をクリックします。
+<!--
 With the coroutine debugger, you can:
 * Check the state of each coroutine.
 * See the values of local and captured variables for both running and suspended coroutines.
 * See a full coroutine creation stack, as well as a call stack inside the coroutine. The stack includes all frames with 
 variable values, even those that would be lost during standard debugging.
 * Get a full report that contains the state of each coroutine and its stack. To obtain it, right-click inside the **Coroutines** tab, and then click **Get Coroutines Dump**.
+-->
 
+コルーチンのデバッグを開始するためには、ブレーク・ポイントを設定し、デバッグ・モードでアプリケーションを実行するだけですみます。
+<!--
 To start coroutine debugging, you just need to set breakpoints and run the application in debug mode.
+-->
 
+コルーチンのデバッグに関する詳細は、この [チュートリアル](https://kotlinlang.org/docs/tutorials/coroutines/debug-coroutines-with-idea.html) で学べます。
+<!--
 Learn more about coroutines debugging in the [tutorial](https://kotlinlang.org/docs/tutorials/coroutines/debug-coroutines-with-idea.html).
+-->
 
 ### Debugging using logging
 
