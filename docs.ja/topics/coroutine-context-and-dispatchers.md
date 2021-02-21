@@ -3,7 +3,7 @@
 <!--[//]: # (title: Coroutine context and dispatchers)-->
 # コルーチンのコンテキストとディスパッチャー
 
-コルーチンは常に、Kotlin 標準ライブラリ (Kotlin standard library) で定義された
+コルーチンは常に、Kotlin 標準ライブラリー (Kotlin standard library) で定義された
 [CoroutineContext](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines/-coroutine-context/)
 型の値により、あるコンテキスト (context) において実行されます。
 <!--
@@ -397,11 +397,28 @@ is consecutively assigned to all created coroutines when the debugging mode is o
 -->
 <!--{type="note"}-->
 
-## Jumping between threads
+## スレッド間をジャンプする
+<!--## Jumping between threads-->
 
+以下のコードを JVM オプションに `-Dkotlinx.coroutines.debug` をつけて実行してみましょう（[前節](#コルーチンとスレッドをデバッグする)を参照）。
+<!--
 Run the following code with the `-Dkotlinx.coroutines.debug` JVM option (see [debug](#debugging-coroutines-and-threads)):
+-->
 
 ```kotlin
+    newSingleThreadContext("Ctx1").use { ctx1 ->
+        newSingleThreadContext("Ctx2").use { ctx2 ->
+            runBlocking(ctx1) {
+                log("Started in ctx1")
+                withContext(ctx2) {
+                    log("Working in ctx2")
+                }
+                log("Back to ctx1")
+            }
+        }
+    }
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
@@ -421,16 +438,24 @@ fun main() {
     }
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-04.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-04.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-04.kt).-->
+<!--{type="note"}-->
 
+ここではいくつかの新しいテクニックが示されています。
+ひとつは明示的に指定したコンテキストにおいて [runBlocking] を使用する方法で、
+もうひとつは同じコルーチンに留まっていながらコルーチンのコンテキストを変更するために
+ [withContext] 関数を使用することです。
+これらは以下の出力でわかります。
+<!--
 It demonstrates several new techniques. One is using [runBlocking] with an explicitly specified context, and
 the other one is using the [withContext] function to change the context of a coroutine while still staying in the
 same coroutine, as you can see in the output below:
+-->
 
 ```text
 [Ctx1 @coroutine#1] Started in ctx1
@@ -440,8 +465,12 @@ same coroutine, as you can see in the output below:
 
 <!--- TEST -->
 
+この例では、[newSingleThreadContext] で作成したスレッドがもはや必要なくなったとき、
+それを解放するために Kotlin 標準ライブラリーにある `use` 関数を利用していることにも注目してください。
+<!--
 Note that this example also uses the `use` function from the Kotlin standard library to release threads
 created with [newSingleThreadContext] when they are no longer needed. 
+-->
 
 ## Job in the context
 
