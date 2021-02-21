@@ -301,16 +301,38 @@ To start coroutine debugging, you just need to set breakpoints and run the appli
 Learn more about coroutines debugging in the [tutorial](https://kotlinlang.org/docs/tutorials/coroutines/debug-coroutines-with-idea.html).
 -->
 
-### Debugging using logging
+### ログを用いたデバッグ
+<!--### Debugging using logging-->
 
+コルーチン・デバッガーを使用せずにスレッドのあるアプリケーションをデバッグする別のアプローチは、
+各ログ・ステートメントにおいてログ・ファイルにスレッドの名前を出力することです。
+この機能は、ログのフレームワークによって普遍的にサポートされています。
+コルーチンを用いる場合には、スレッド名だけでは状況の多くはわからないので、
+`kotlinx.coroutines` にはこれを用意にするデバッグ機能が含まれています。
+<!--
 Another approach to debugging applications with 
 threads without Coroutine Debugger is to print the thread name in the log file on each log statement. This feature is universally supported
 by logging frameworks. When using coroutines, the thread name alone does not give much of a context, so 
 `kotlinx.coroutines` includes debugging facilities to make it easier. 
+-->
 
+JVM のオプションに `-Dkotlinx.coroutines.debug` をつけて以下のコードを実行してみましょう。
+<!--
 Run the following code with `-Dkotlinx.coroutines.debug` JVM option:
+-->
 
 ```kotlin
+    val a = async {
+        log("I'm computing a piece of the answer")
+        6
+    }
+    val b = async {
+        log("I'm computing another piece of the answer")
+        7
+    }
+    log("The answer is ${a.await() * b.await()}")
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
@@ -328,17 +350,25 @@ fun main() = runBlocking<Unit> {
     log("The answer is ${a.await() * b.await()}")
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-03.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-03.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-03.kt).-->
+<!--{type="note"}-->
 
+ここには 3 つのコルーチンがあります。
+`runBlocking` 内のメイン・コルーチン (#1) と、
+遅延された値 `a` (#2) および `b` (#3) を計算する 2 つのコルーチンです。
+これらはすべて `runBlocking` のコンテキストにおいて実行され、メイン・スレッドに制限されています。
+このコードの出力は以下のようです。
+<!--
 There are three coroutines. The main coroutine (#1) inside `runBlocking` 
 and two coroutines computing the deferred values `a` (#2) and `b` (#3).
 They are all executing in the context of `runBlocking` and are confined to the main thread.
 The output of this code is:
+-->
 
 ```text
 [main @coroutine#2] I'm computing a piece of the answer
@@ -348,14 +378,24 @@ The output of this code is:
 
 <!--- TEST FLEXIBLE_THREAD -->
 
+`log` 関数は角括弧にスレッド名を出力しており、それが `main` スレッドであることがわかるとともに、現在実行中のコルーチンの識別子がそれに付加されています。
+この識別子は、デバッグ・モードがオンであるときに、生成されたすべてのコルーチンに連続的に割り当てられます。
+<!--
 The `log` function prints the name of the thread in square brackets, and you can see that it is the `main`
 thread with the identifier of the currently executing coroutine appended to it. This identifier 
 is consecutively assigned to all created coroutines when the debugging mode is on.
+-->
 
+> デバッグ・モードは JVM が `-ea` オプションを付けて実行されるときにもオンとなります
+> （訳注：`-ea` はアサーションを有効にする `-enableassertions` オプションの簡略表記）。
+> デバッグ機能については  [DEBUG_PROPERTY_NAME] プロパティーのドキュメントで知ることができます。
+>
+<!--
 > Debugging mode is also turned on when JVM is run with `-ea` option.
 > You can read more about debugging facilities in the documentation of the [DEBUG_PROPERTY_NAME] property.
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
 ## Jumping between threads
 
