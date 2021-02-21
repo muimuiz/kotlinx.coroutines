@@ -978,7 +978,7 @@ As you can see, only the first two coroutines print a message and the others are
 by a single invocation of `job.cancel()` in `Activity.destroy()`.
 -->
 
-> Android は、ライフサイクルのあるすべての実態においてコルーチンのスコープを提供者（ファースト・パーティー）サポートしていることに注意してください。
+> Android は、ライフサイクルのあるすべての実態においてコルーチンのスコープを提供者（ファーストパーティー）サポートしていることに注意してください。
 > [対応する文書](https://developer.android.com/topic/libraries/architecture/coroutines#lifecyclescope) をご参照ください。
 >
 <!--
@@ -988,18 +988,48 @@ by a single invocation of `job.cancel()` in `Activity.destroy()`.
 -->
 <!--{type="note"}-->
 
-### Thread-local data
+### スレッドローカルなデータ
+<!--### Thread-local data-->
 
+スレッドローカル（スレッドに局所的、thread-local）なデータをいくつかコルーチンへと、
+あるいはコルーチン同士で受け渡す機能があると便利なことがあります。
+しかし、そうしたコルーチンは特定のスレッドに縛られているわけではないため、
+それを手動で行おうとすればボイラープレート（訳注：決まりきったコード）になりがちでしょう。
+<!--
 Sometimes it is convenient to have an ability to pass some thread-local data to or between coroutines. 
 However, since they are not bound to any particular thread, this will likely lead to boilerplate if done manually.
+-->
 
+[`ThreadLocal`](https://docs.oracle.com/javase/8/docs/api/java/lang/ThreadLocal.html) に対して、
+[asContextElement] 拡張関数がここではその助け舟となります。
+これは追加のコンテキスト要素を作り、あたえられた `ThreadLocal` な値を保持し、コルーチンがコンテキストを切り替えるたびにそれを復元します。
+<!--
 For [`ThreadLocal`](https://docs.oracle.com/javase/8/docs/api/java/lang/ThreadLocal.html), 
 the [asContextElement] extension function is here for the rescue. It creates an additional context element 
 which keeps the value of the given `ThreadLocal` and restores it every time the coroutine switches its context.
+-->
 
+これを実際に確認するのは簡単です。
+<!--
 It is easy to demonstrate it in action:
+-->
 
 ```kotlin
+val threadLocal = ThreadLocal<String?>() // スレッドローカルな変数を宣言
+
+fun main() = runBlocking<Unit> {
+    threadLocal.set("main")
+    println("Pre-main, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+    val job = launch(Dispatchers.Default + threadLocal.asContextElement(value = "launch")) {
+        println("Launch start, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+        yield()
+        println("After yield, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+    }
+    job.join()
+    println("Post-main, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
+}
+```  
+<!--kotlin
 import kotlinx.coroutines.*
 
 val threadLocal = ThreadLocal<String?>() // declare thread-local variable
@@ -1017,18 +1047,27 @@ fun main() = runBlocking<Unit> {
     println("Post-main, current thread: ${Thread.currentThread()}, thread local value: '${threadLocal.get()}'")
 //sampleEnd    
 }
-```  
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-11.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-11.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-11.kt).-->
+<!--{type="note"}-->
 
+この例では、[Dispatcher.Default] を用いて
+バックグラウンドのスレッド・プールに新しいコルーチンを起動しています。
+このため、スレッド・プールとは別のスレッドで動作しますが、
+どのスレッドでコルーチンが実行されていても
+`threadLocal.asContextElement(value = "launch")` を用いて指定したスレッドローカルな変数の値を依然保持します。
+よって、出力は（[デバッグ・モード](#コルーチンとスレッドをデバッグする)で）次のようになります。
+<!--
 In this example we launch a new coroutine in a background thread pool using [Dispatchers.Default], so
 it works on a different thread from the thread pool, but it still has the value of the thread local variable
 that we specified using `threadLocal.asContextElement(value = "launch")`,
 no matter which thread the coroutine is executed on.
 Thus, the output (with [debug](#debugging-coroutines-and-threads)) is:
+-->
 
 ```text
 Pre-main, current thread: Thread[main @coroutine#1,5,main], thread local value: 'main'
@@ -1039,23 +1078,51 @@ Post-main, current thread: Thread[main @coroutine#1,5,main], thread local value:
 
 <!--- TEST FLEXIBLE_THREAD -->
 
+対応するコンテキスト要素を設定し忘れることがよくあります。
+コルーチンからアクセスされたスレッドローカルな変数はこのとき、
+コルーチンが動作しているスレッドが異なるならば予期しない値をもつことありえます。
+こうした状況を回避するために、[ensurePresent] メソッドを利用し、
+不適切な利用には、
+フェイルファスト（訳注：バグの洗い出しのためエラー回復しようとせずに処理を中断させる）
+で対応することが推奨されます。
+<!--
 It's easy to forget to set the corresponding context element. The thread-local variable accessed from the coroutine may
 then have an unexpected value, if the thread running the coroutine is different.
 To avoid such situations, it is recommended to use the [ensurePresent] method
 and fail-fast on improper usages.
+-->
 
+`ThreadLocal` は、第一級のサポートがあり、
+`kotlinx.coroutines` が提供する任意のプリミティブとともに使用することができます。
+ただし、ひとつ重要な制限があります。
+スレッドローカル（なオブジェクト）が変化した場合、新たな値はコルーチンの呼び出し元へと伝播せず
+（なぜなら、コンテキスト要素はすべての `ThreadLocal` なオブジェクトのアクセスを追跡できないからです）、
+更新された値は次のサスペンドで失われます。
+コルーチン内のスレッドローカルの値を更新するためには [withContext] を使用してください。
+詳細は [asContextElement] を参照ください。
+<!--
 `ThreadLocal` has first-class support and can be used with any primitive `kotlinx.coroutines` provides.
 It has one key limitation, though: when a thread-local is mutated, a new value is not propagated to the coroutine caller 
 (because a context element cannot track all `ThreadLocal` object accesses), and the updated value is lost on the next suspension.
 Use [withContext] to update the value of the thread-local in a coroutine, see [asContextElement] for more details. 
+-->
 
+別の方法として、 `class Counter(var i: Int)` のようなミュータブル（変更可能）な入れ物に格納し、
+それからスレッドローカルな変数へと格納することもできます。
+しかしこの場合には、あなたは、このミュータブルな入れ物の変数に対する潜在的な並列的変更を同期させるすべての責任を負うことになります。
+<!--
 Alternatively, a value can be stored in a mutable box like `class Counter(var i: Int)`, which is, in turn, 
 stored in a thread-local variable. However, in this case you are fully responsible to synchronize 
 potentially concurrent modifications to the variable in this mutable box.
+-->
 
-For advanced usage, for example for integration with logging MDC, transactional contexts or any other libraries
-which internally use thread-locals for passing data, see the documentation of the [ThreadContextElement] interface 
+ロギング MDC (logging MDC)、トランザクション・コンテキスト (transactional context) 、
+その他、内部的にデータの受け渡しにスレッドローカルを用いているライブラリとの統合のような高度な使用法については、
+実装されるべき [ThreadContextElement] インターフェイスのドキュメントを参照してください。
+<!--
+For advanced usage, for example for integration with logging MDC, transactional contexts or any other libraries which internally use thread-locals for passing data, see the documentation of the [ThreadContextElement] interface 
 that should be implemented. 
+-->
 
 <!--- MODULE kotlinx-coroutines-core -->
 <!--- INDEX kotlinx.coroutines -->
