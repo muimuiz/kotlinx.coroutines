@@ -680,17 +680,46 @@ Now processing of the request is complete
 
 <!--- TEST -->
 
-## Naming coroutines for debugging
+## デバックのためにコルーチンに名前をつける
+<!--## Naming coroutines for debugging-->
 
+自動的に割り当てられる識別子は、コルーチンが何度もログを記録し、同じコルーチンから来るログの記録を突き合わせる必要だけがある場合には有用です。
+しかし、特定のリクエストの処理にコルーチンが結びついているときや、
+特定のバックグラウンド処理を行っている場合には、
+デバッグ目的のために明示的に名前をつけるのがよいでしょう。
+[CoroutineName] コンテキスト要素はスレッド名と同様の役割りをはたします。
+[デバッグ・モード](#コルーチンとスレッドをデバッグする) がオンにされているとき、
+そのコルーチンを実行しているスレッド名に含められます。
+<!--
 Automatically assigned ids are good when coroutines log often and you just need to correlate log records
 coming from the same coroutine. However, when a coroutine is tied to the processing of a specific request
 or doing some specific background task, it is better to name it explicitly for debugging purposes.
 The [CoroutineName] context element serves the same purpose as the thread name. It is included in the thread name that
 is executing this coroutine when the [debugging mode](#debugging-coroutines-and-threads) is turned on.
+-->
 
+次の例がこのやり方を示しています。
+<!--
 The following example demonstrates this concept:
+-->
 
 ```kotlin
+    log("Started main coroutine")
+    // バックグラウンドで 2 つの値の計算を実行します
+    val v1 = async(CoroutineName("v1coroutine")) {
+        delay(500)
+        log("Computing v1")
+        252
+    }
+    val v2 = async(CoroutineName("v2coroutine")) {
+        delay(1000)
+        log("Computing v2")
+        6
+    }
+    log("The answer for v1 / v2 = ${v1.await() / v2.await()}")
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
@@ -712,14 +741,18 @@ fun main() = runBlocking(CoroutineName("main")) {
     log("The answer for v1 / v2 = ${v1.await() / v2.await()}")
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-08.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-08.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-08.kt).-->
+<!--{type="note"}-->
 
+JVM オプションに `-Dkotlinx.coroutines.debug` をつけたときのこの出力は次のようになります。
+<!--
 The output it produces with `-Dkotlinx.coroutines.debug` JVM option is similar to:
+-->
  
 ```text
 [main @main#1] Started main coroutine
@@ -730,13 +763,24 @@ The output it produces with `-Dkotlinx.coroutines.debug` JVM option is similar t
 
 <!--- TEST FLEXIBLE_THREAD -->
 
-## Combining context elements
+## コンテキスト要素を結合する
+<!--## Combining context elements-->
 
+ときには、コルーチン・コンテキストに複数の要素を定義する必要があることがあります。
+このためには `+` 演算子を用いることができます。
+例えば、明示的に指定されたディッスパッチャーと明示的に指定された名前とを持つコルーチンひとつを一度で起動できます。
+<!--
 Sometimes we need to define multiple elements for a coroutine context. We can use the `+` operator for that.
 For example, we can launch a coroutine with an explicitly specified dispatcher and an explicitly specified 
 name at the same time: 
+-->
 
 ```kotlin
+    launch(Dispatchers.Default + CoroutineName("test")) {
+        println("I'm working in thread ${Thread.currentThread().name}")
+    }
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking<Unit> {
@@ -746,14 +790,18 @@ fun main() = runBlocking<Unit> {
     }
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-09.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-09.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-09.kt).-->
+<!--{type="note"}-->
 
+JVM オプションに `-Dkotlinx.coroutines.debug` をつけたときのこのコードの出力は以下です。
+<!--
 The output of this code with the `-Dkotlinx.coroutines.debug` JVM option is: 
+-->
 
 ```text
 I'm working in thread DefaultDispatcher-worker-1 @test#2
@@ -761,8 +809,21 @@ I'm working in thread DefaultDispatcher-worker-1 @test#2
 
 <!--- TEST FLEXIBLE_THREAD -->
 
-## Coroutine scope
+## コルーチン・スコープ
+<!--## Coroutine scope-->
 
+コンテキストと子、ジョブについての知識をまとめてみましょう。
+アプリケーションがあるライフサイクルを持つオブジェクトを持っていて、
+そのオブジェクトはコルーチンではないと仮定します。
+例えば、Android アプリケーションを書いていて、
+Android アクティビティーのコンテキストにおいて、データの取得と更新、アニメーションの実行など非同期操作を実行するためさまざまなコルーチンを起動するとします。
+アクティビティーが破棄されたとき、メモリー・リークを避けるためにこれらコルーチンすべてがキャンセルされなければなりません。
+もちろん、コンテキストやジョブを手動で操作して、
+アクティビティーのライフサイクルとそのコルーチンとを結びつけることもできますが、
+`kotlinx.coroutines` はそれをカプセル化する [CoroutineScope] という抽象化を提供しています。
+すべてのコルーチン・ビルダーがコルーチン・スコープの拡張として宣言されているので、
+それにはすでに馴染みがあるでしょう。
+<!--
 Let us put our knowledge about contexts, children and jobs together. Assume that our application has
 an object with a lifecycle, but that object is not a coroutine. For example, we are writing an Android application
 and launch various coroutines in the context of an Android activity to perform asynchronous operations to fetch 
@@ -770,11 +831,17 @@ and update data, do animations, etc. All of these coroutines must be cancelled w
 to avoid memory leaks. We, of course, can manipulate contexts and jobs manually to tie the lifecycles of the activity 
 and its coroutines, but `kotlinx.coroutines` provides an abstraction encapsulating that: [CoroutineScope].
 You should be already familiar with the coroutine scope as all coroutine builders are declared as extensions on it. 
+-->
 
+アクティビティーのライフサイクルと結びついた [CoroutineScope] のインスタンスを作成することによって、コルーチンのライフサイクルを管理します。
+`CoroutineScope` のインスタンスは [CoroutineScope()] あるいは [MainScope()] ファクトリー関数で作成することができます。
+前者は一般目的のスコープを作成し、後者は [Dispatchers.Main] をデフォルトのディスパッチャとして使用してて UI アプリケーション用のスコープを作成します。
+<!--
 We manage the lifecycles of our coroutines by creating an instance of [CoroutineScope] tied to 
 the lifecycle of our activity. A `CoroutineScope` instance can be created by the [CoroutineScope()] or [MainScope()]
 factory functions. The former creates a general-purpose scope, while the latter creates a scope for UI applications and uses
 [Dispatchers.Main] as the default dispatcher:
+-->
 
 ```kotlin
 class Activity {
@@ -783,13 +850,39 @@ class Activity {
     fun destroy() {
         mainScope.cancel()
     }
-    // to be continued ...
+    // つづく ...
 ```
+<!--kotlin
+class Activity {
+    private val mainScope = MainScope()
+    
+    fun destroy() {
+        mainScope.cancel()
+    }
+    // to be continued ...
+-->
 
+定義した `mainScope` を用い、これでこの `Activity` のスコープ内でコルーチンを起動できます。
+確かめるために、異なった遅延時間をもつ 10 個のコルーチンを起動してみましょう。
+<!--
 Now, we can launch coroutines in the scope of this `Activity` using the defined `scope`.
 For the demo, we launch ten coroutines that delay for a different time:
+-->
 
 ```kotlin
+    // class Activity のつづき
+    fun doSomething() {
+        // 確認のためそれぞれ異なった期間に動作する 10 個のコルーチンを起動します
+        repeat(10) { i ->
+            mainScope.launch {
+                delay((i + 1) * 200L) // 200ms, 400ms, ... などいろいろな遅延
+                println("Coroutine $i is done")
+            }
+        }
+    }
+} // class Activity ends
+``` 
+<!--kotlin
     // class Activity continues
     fun doSomething() {
         // launch ten coroutines for a demo, each working for a different time
@@ -801,15 +894,30 @@ For the demo, we launch ten coroutines that delay for a different time:
         }
     }
 } // class Activity ends
-``` 
+--> 
 
+メイン関数ではアクティビティーを作成し、テストのための `doSomething` 関数を呼び、500 ms 後にアクティビティーを破棄します。
+これは `doSomething` が起動したすべてのコルーチンをキャンセルします。
+いくらか長く待ってみても、アクティビティーの破棄の後には、
+もはやメッセージが表示されないことでこのことがわかります。
+<!--
 In our main function we create the activity, call our test `doSomething` function, and destroy the activity after 500ms.
 This cancels all the coroutines that were launched from `doSomething`. We can see that because after the destruction 
 of the activity no more messages are printed, even if we wait a little longer.
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+    val activity = Activity()
+    activity.doSomething() // テスト関数を実行します
+    println("Launched coroutines")
+    delay(500L) // 1/2 秒待ちます
+    println("Destroying activity!")
+    activity.destroy() // すべてのコルーチンをキャンセルします
+    delay(1000) // それらが動作していないことを目で確認します
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 class Activity {
@@ -841,14 +949,18 @@ fun main() = runBlocking<Unit> {
     delay(1000) // visually confirm that they don't work
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-10.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-10.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-10.kt).-->
+<!--{type="note"}-->
 
+この例の出力は次のようです。
+<!--
 The output of this example is:
+-->
 
 ```text
 Launched coroutines
@@ -859,13 +971,22 @@ Destroying activity!
 
 <!--- TEST -->
 
+ご覧のとおり、はじめの 2 つのコルーチンのみがメッセージを表示し、
+`Activity.destroy()` 中の単一の `job.cancel()` の呼び出しによって残りはキャンセルされています。
+<!--
 As you can see, only the first two coroutines print a message and the others are cancelled 
 by a single invocation of `job.cancel()` in `Activity.destroy()`.
+-->
 
+> Android は、ライフサイクルのあるすべての実態においてコルーチンのスコープを提供者（ファースト・パーティー）サポートしていることに注意してください。
+> [対応する文書](https://developer.android.com/topic/libraries/architecture/coroutines#lifecyclescope) をご参照ください。
+>
+<!--
 > Note, that Android has first-party support for coroutine scope in all entities with the lifecycle.
 > See [the corresponding documentation](https://developer.android.com/topic/libraries/architecture/coroutines#lifecyclescope).
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
 ### Thread-local data
 
