@@ -13,7 +13,7 @@ type, defined in the Kotlin standard library.
 -->
 
 コルーチンのコンテキストはさまざまな要素の集まりです。
-主たる要素は、前に見たコルーチンの [Job] であり、
+主たる要素は、前に見たコルーチンの [Job] （ジョブ）であり、
 そして、この節で扱うそのディスパッチャー (dispatcher、振り分け係) です。 
 <!--
 The coroutine context is a set of various elements. The main elements are the [Job] of the coroutine, 
@@ -24,8 +24,8 @@ which we've seen before, and its dispatcher, which is covered in this section.
 <!--## Dispatchers and threads-->
 
 コルーチンのコンテキストには、対応するコルーチンが実行のためにどの（ひとつまたは複数の）スレッドを用いるか決定する
-__コルーチン・ディスパッチャー__ (coroutine dispather) が含まれています（[CoroutineDispatcher] 参照）。このコルーチン・ディスパッチャーは、コルーチンの実行を特定のスレッドへと制限するか、
-スレッド・プールへと振り分けるか、あるいは制約を受けることなく実行させるかします。
+__コルーチン・ディスパッチャー__ (coroutine dispather) が含まれています（[CoroutineDispatcher] 参照）。このコルーチン・ディスパッチャーは、コルーチンの実行を特定のスレッドへと制限 (confine) するか、
+スレッド・プールへと振り分けるか、あるいは制約を受けることなく (unconfined) 実行させるかします。
 <!--
 The coroutine context includes a _coroutine dispatcher_ (see [CoroutineDispatcher]) that determines what thread or threads 
 the corresponding coroutine uses for its execution. The coroutine dispatcher can confine coroutine execution 
@@ -475,8 +475,8 @@ created with [newSingleThreadContext] when they are no longer needed.
 ## コンテキストの Job
 <!--## Job in the context-->
 
-コルーチンの [Job] はそのコンテキストの一部であり、
-`coroutineContext[Job]` 式を用いてそれをたぐり寄せることができます。
+コルーチンの [Job] （ジョブ）はそのコンテキストの一部であり、
+`coroutineContext[Job]` 式を用いてそれを取得することができます。
 <!--
 The coroutine's [Job] is part of its context, and can be retrieved from it 
 using the `coroutineContext[Job]` expression:
@@ -534,7 +534,7 @@ a _child_ of the parent coroutine's job. When the parent coroutine is cancelled,
 are recursively cancelled, too. 
 -->
 
-しかし、[GlobalScope] がコルーチンの起動に用いられると、新しいコルーチンの Job に対する親はいません。
+しかし、[GlobalScope] がコルーチンの起動に用いられると、新しいコルーチンのジョブに対する親はいません。
 そのため、それを起動したスコープに縛られることなく、独立して操作を行います。
 <!--
 However, when [GlobalScope] is used to launch a coroutine, there is no parent for the job of the new coroutine.
@@ -544,7 +544,7 @@ It is therefore not tied to the scope it was launched from and operates independ
 ```kotlin
     // 到着リクエストのようなものを処理するコルーチンを起動します
     val request = launch {
-        // 2つの Job を作ります。ひとつは GlobalScope を用い、
+        // 2つのジョブを作ります。ひとつは GlobalScope を用い、
         GlobalScope.launch {
             println("job1: I run in GlobalScope and execute independently!")
             delay(1000)
@@ -612,12 +612,33 @@ main: Who has survived request cancellation?
 
 <!--- TEST -->
 
-## Parental responsibilities 
+## 親の責任
+<!--## Parental responsibilities -->
 
+親 (parent) のコルーチンはその子すべてが完了するまで待機します。
+親はそれが起動した子すべてを明示的に追跡する必要はなく、
+終了時に子を待機するために [Job.join] を用いる必要もありません。
+<!--
 A parent coroutine always waits for completion of all its children. A parent does not have to explicitly track
 all the children it launches, and it does not have to use [Job.join] to wait for them at the end:
+-->
 
 ```kotlin
+    // 到着リクエストのようなものを処理するコルーチンを起動します
+    val request = launch {
+        repeat(3) { i -> // いくつか子のジョブを起動します
+            launch  {
+                delay((i + 1) * 200L) // variable delay 200ms, 400ms, 600ms
+                println("Coroutine $i is done")
+            }
+        }
+        println("request: I'm done and I don't explicitly join my children that are still active")
+    }
+    request.join() // すべての子を含んでいる request の完了を待機します
+    println("Now processing of the request is complete")
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking<Unit> {
@@ -636,14 +657,18 @@ fun main() = runBlocking<Unit> {
     println("Now processing of the request is complete")
 //sampleEnd
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-07.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-07.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-07.kt).-->
+<!--{type="note"}-->
 
+結果は以下のようになります。
+<!--
 The result is going to be:
+-->
 
 ```text
 request: I'm done and I don't explicitly join my children that are still active
