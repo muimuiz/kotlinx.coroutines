@@ -114,10 +114,10 @@ Completed in 2017 ms
 
 <!--- TEST ARBITRARY_TIME -->
 
-## async を用いた並列処理
+## async を用いた並行処理
 <!--## Concurrent using async-->
 
-`doSomethingUsefulOne` と `doSomethingUsefulTwo` の呼び出しの間に依存性がなく、両者を __並列的__ (concurrently) に実行することでより早く答えを得たいとしたらどうでしょう？
+`doSomethingUsefulOne` と `doSomethingUsefulTwo` の呼び出しの間に依存性がなく、両者を __並行的__ (concurrently) に実行することでより早く答えを得たいとしたらどうでしょう？
 ここで助けとなるのが [async] です。
 <!--
 What if there are no dependencies between invocations of `doSomethingUsefulOne` and `doSomethingUsefulTwo` and
@@ -126,7 +126,7 @@ we want to get the answer faster, by doing both _concurrently_? This is where [a
 
 概念的には、[async] は [launch] とよく似ています。
 これは軽量なスレッドであるところの別のコルーチンを開始し、それは他のコルーチンすべてとは並列に動作します。
-違いは `launch` が [Job] を返して結果の値を伝えないのに対し、`async` は [Deferred]、すなわち、あとで結果を与える約束を表している軽量の非ブロッキングな future を返すことです（訳注：future または promise はここでのように並列処理において結果の取得を後回しとする仕組み）。
+違いは `launch` が [Job] を返して結果の値を伝えないのに対し、`async` は [Deferred]、すなわち、あとで結果を与える約束を表している軽量の非ブロッキングな future を返すことです（訳注：future または promise はここでのように並行処理において結果の取得を後回しとする仕組み）。
 先延ばしにされた値に対し最終的結果を得るためには、`.await()` を用いることができますが、`Deferred` は `Job` でもあるので、必要ならそれをキャンセルすることもできます。
 <!--
 Conceptually, [async] is just like [launch]. It starts a separate coroutine which is a light-weight thread 
@@ -187,8 +187,8 @@ Completed in 1017 ms
 
 <!--- TEST ARBITRARY_TIME -->
 
-この 2 つのコルーチンは並列して実行されるので 2 倍速くなっています。
-コルーチンによる並列性は常に明示されることに注意してください。
+この 2 つのコルーチンは並行して実行されるので 2 倍速くなっています。
+コルーチンによる並行性は常に明示されることに注意してください。
 <!--
 This is twice as fast, because the two coroutines execute concurrently. 
 Note that concurrency with coroutines is always explicit.
@@ -325,7 +325,7 @@ fun somethingUsefulTwoAsync() = GlobalScope.async {
 
 `xxxAsync` 関数は __サスペンド__ 関数では「ない」ことに注意しましょう。
 これらはどこからでも用いることができます。
-しかし、これを用いることは、常に呼び出したコードに対してその動作が非同期的（ここでは __並列的__ の意味）に実行されることを意味します。
+しかし、これを用いることは、常に呼び出したコードに対してその動作が非同期的（ここでは __並行的__ の意味）に実行されることを意味します。
 <!--
 Note that these `xxxAsync` functions are **not** _suspending_ functions. They can be used from anywhere.
 However, their use always implies asynchronous (here meaning _concurrent_) execution of their action
@@ -437,10 +437,10 @@ even though the operation that initiated it was aborted. This problem does not h
 concurrency, as shown in the section below.
 -->
 
-## async をもつ構造化並列性
+## async をもつ構造化された並行性
 <!--## Structured concurrency with async-->
 
-[async を用いた並列処理](#async-を用いた並列処理) を例に取り、
+[async を用いた並行処理](#async-を用いた並行処理) を例に取り、
 `doSomethingUsefulOne` と `doSomethingUsefulTwo` を同時に実行し、その結果の合計を返す関数を抽出してみましょう。
 [async] コルーチン・ビルダーは [CoroutineScope] の拡張として定義されているので、
 それをそのスコープ内に持つ必要があります。
