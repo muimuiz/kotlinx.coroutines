@@ -564,7 +564,6 @@ fun main() = runBlocking<Unit> {
 
 > 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-08.kt) で入手できます。
 >
->
 <!-- > You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-08.kt).-->
 <!--{type="note"}-->
 
@@ -581,16 +580,35 @@ response 3
 
 <!--- TEST -->
 
-### Transform operator
+### transform オペレーター
+<!--### Transform operator-->
 
+flow の変換オペレーターの中でも最も一般的なものは [transform] と呼ばれています。
+これは、[map] や [filter] のような単純な変換を模倣するのにも、より複雑な変換を実装するのにも使うことができます。
+`transform` オペレーターを使うとで、任意の値を任意の回数 [emit][FlowCollector.emit] することができます。
+<!--
 Among the flow transformation operators, the most general one is called [transform]. It can be used to imitate
 simple transformations like [map] and [filter], as well as implement more complex transformations. 
 Using the `transform` operator, we can [emit][FlowCollector.emit] arbitrary values an arbitrary number of times.
+-->
 
+例えば次のように、`transform` を使って長時間かかる非同期リクエストを処理する前に文字列を emit でき、
+それからその応答を続けることができます。
+<!--
 For example, using `transform` we can emit a string before performing a long-running asynchronous request 
 and follow it with a response:
+-->
 
 ```kotlin
+    (1..3).asFlow() // リクエストの flow
+        .transform { request ->
+            emit("Making request $request") 
+            emit(performRequest(request)) 
+        }
+        .collect { response -> println(response) }
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -609,14 +627,16 @@ fun main() = runBlocking<Unit> {
         .collect { response -> println(response) }
 //sampleEnd
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-09.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-09.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-09.kt).-->
+<!--{type="note"}-->
 
-The output of this code is:
+このコードの出力は以下のようです。
+<!--The output of this code is:-->
 
 ```text
 Making request 1
