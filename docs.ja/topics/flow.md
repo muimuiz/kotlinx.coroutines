@@ -446,17 +446,34 @@ Done
 See [Flow cancellation checks](#flow-cancellation-checks) section for more details.
 -->
 
-## Flow builders
+## Flow ビルダー
+<!--## Flow builders-->
 
+直前の例にある `flow { ... }` ビルダーが最も基本的なものです。
+より簡単な flow の宣言のために他のビルダーも用意されています。
+<!--
 The `flow { ... }` builder from the previous examples is the most basic one. There are other builders for
 easier declaration of flows:
+-->
 
+* [flowOf] ビルダーは値の固定された集まりを emit する flow を定義します。
+* 種々のコレクションや sequence は拡張関数 `.asFlow()` を用いて flow に変換することができます。
+<!--
 * [flowOf] builder that defines a flow emitting a fixed set of values.
 * Various collections and sequences can be converted to flows using `.asFlow()` extension functions.
+-->
 
+これから、flow からの 1 から 3 までの数値を表示する先の例は、次のように書くことができます。
+<!--
 So, the example that prints the numbers from 1 to 3 from a flow can be written as:
+-->
 
 ```kotlin
+    // 整数の範囲 (range) を flow に変換します
+    (1..3).asFlow().collect { value -> println(value) }
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -466,20 +483,24 @@ fun main() = runBlocking<Unit> {
     (1..3).asFlow().collect { value -> println(value) }
 //sampleEnd 
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-07.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-07.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-07.kt).-->
+<!--{type="note"}-->
 
-<!--- TEST
+<!--- TEST-->
+```text
 1
 2
 3
--->
+```
+<!-- -->
 
-## Intermediate flow operators
+## 中置 flow 演算子
+<!--## Intermediate flow operators-->
 
 Flows can be transformed with operators, just as you would with collections and sequences. 
 Intermediate operators are applied to an upstream flow and return a downstream flow. 
