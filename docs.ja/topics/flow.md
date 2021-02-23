@@ -450,7 +450,7 @@ See [Flow cancellation checks](#flow-cancellation-checks) section for more detai
 <!--## Flow builders-->
 
 直前の例にある `flow { ... }` ビルダーが最も基本的なものです。
-より簡単な flow の宣言のために他のビルダーも用意されています。
+より利便的に flow を宣言するための他のビルダーも用意されています。
 <!--
 The `flow { ... }` builder from the previous examples is the most basic one. There are other builders for
 easier declaration of flows:
@@ -649,13 +649,38 @@ response 3
 
 <!--- TEST -->
 
-### Size-limiting operators
+### サイズを制限するオペレーター
+<!--### Size-limiting operators-->
 
+[take] のようなサイズを制限するオペレーターは、対応する制限に達したとき flow の実行をキャンセルします。
+コルーチンでのキャンセルは常に例外の送出により行われるため、
+（`try { ... } finally { ... }` ブロックのような）すべてのリソース管理関数は
+キャンセルの場合でも正常に働きます。
+<!--
 Size-limiting intermediate operators like [take] cancel the execution of the flow when the corresponding limit
 is reached. Cancellation in coroutines is always performed by throwing an exception, so that all the resource-management
 functions (like `try { ... } finally { ... }` blocks) operate normally in case of cancellation:
+-->
 
 ```kotlin
+fun numbers(): Flow<Int> = flow {
+    try {                          
+        emit(1)
+        emit(2) 
+        println("This line will not execute")
+        emit(3)    
+    } finally {
+        println("Finally in numbers")
+    }
+}
+
+fun main() = runBlocking<Unit> {
+    numbers() 
+        .take(2) // はじめの 2 つのみを取ります
+        .collect { value -> println(value) }
+}            
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -677,15 +702,20 @@ fun main() = runBlocking<Unit> {
         .collect { value -> println(value) }
 }            
 //sampleEnd
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-10.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-10.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-10.kt).-->
+<!--{type="note"}-->
 
+`numbers()` 関数中の `flow { ... }` 本体の実行が 2 つめの数を emit した後で停止していることは、
+このコードの出力からはっきり示されます。
+<!--
 The output of this code clearly shows that the execution of the `flow { ... }` body in the `numbers()` function
 stopped after emitting the second number:
+-->
 
 ```text       
 1
@@ -695,18 +725,38 @@ Finally in numbers
 
 <!--- TEST -->
 
-## Terminal flow operators
+## 終端 flow オペレーター
+<!--## Terminal flow operators-->
 
+Flow の終端オペレーター (terminal operator) は、その flow を collect し始める __サスペンド関数__ です。
+[collect] オペレーターがその最も基本となるものですが、次のような利便的な他の終端オペレーターも用意されています。
+<!--
 Terminal operators on flows are _suspending functions_ that start a collection of the flow.
 The [collect] operator is the most basic one, but there are other terminal operators, which can make it easier:
+-->
 
+* [toList] や [toSet] のようなさまざまなコレクションへの変換。
+* 最初の値を取る [first] と、flow が単一の値を emit することを保証する [single]。
+* [reduce] と [fold] による flow の単一の値への集約。
+<!--
 * Conversion to various collections like [toList] and [toSet].
 * Operators to get the [first] value and to ensure that a flow emits a [single] value.
 * Reducing a flow to a value with [reduce] and [fold].
+-->
 
+例えば、
+<!--
 For example:
+-->
 
 ```kotlin
+    val sum = (1..5).asFlow()
+        .map { it * it } // 1 から 5 までの数の 2 乗 5                           
+        .reduce { a, b -> a + b } // それらの合計（終端オペレーター）
+    println(sum)
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -718,14 +768,18 @@ fun main() = runBlocking<Unit> {
     println(sum)
 //sampleEnd     
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-11.kt).
+完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-11.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-11.kt).-->
+<!--{type="note"}-->
 
+単一の数が表示されます。
+<!--
 Prints a single number:
+-->
 
 ```text
 55
