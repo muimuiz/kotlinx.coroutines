@@ -1,4 +1,4 @@
-[//]: # (title: Coroutines guide)
+<!--[//]: # (title: Coroutines guide)-->
 # コルーチンのガイド
 
 Kotlin は言語として、
@@ -40,13 +40,13 @@ In order to use coroutines as well as follow the examples in this guide, you nee
 ## もくじ
 <!--## Table of contents-->
 
-* [コルーチンの基本](basics.md) [Coroutines basics](https://kotlinlang.org/docs/coroutines-basics.html)
+* [コルーチンの基本](basics.md) ([Coroutines basics](https://kotlinlang.org/docs/coroutines-basics.html))
 * [Tutorial: Create a basic coroutine](https://kotlinlang.org/docs/coroutines-basic-jvm.html)
 * [Hands-on: Intro to coroutines and channels](https://play.kotlinlang.org/hands-on/Introduction%20to%20Coroutines%20and%20Channels)
-* [キャンセルとタイムアウト](cancellation-and-timeouts.md) [Cancellation and timeouts](https://kotlinlang.org/docs/cancellation-and-timeouts.html)
-* [サスペンド関数を構成する](composing-suspending-functions.md) [Composing suspending functions](https://kotlinlang.org/docs/composing-suspending-functions.html)
-* [コルーチンのコンテキストとディスパッチャー](coroutine-context-and-dispatchers.md) [Coroutine context and dispatchers](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html)
-* [非同期の Flow](flow.md) [Asynchronous Flow](https://kotlinlang.org/docs/flow.html)
+* [キャンセルとタイムアウト](cancellation-and-timeouts.md) ([Cancellation and timeouts](https://kotlinlang.org/docs/cancellation-and-timeouts.html))
+* [サスペンド関数を構成する](composing-suspending-functions.md) ([Composing suspending functions](https://kotlinlang.org/docs/composing-suspending-functions.html))
+* [コルーチンのコンテキストとディスパッチャー](coroutine-context-and-dispatchers.md) ([Coroutine context and dispatchers](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html))
+* [非同期の Flow](flow.md)（部分訳） ([Asynchronous Flow](https://kotlinlang.org/docs/flow.html))
 * [Channels](https://kotlinlang.org/docs/channels.html)
 * [Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.html)
 * [Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html)
