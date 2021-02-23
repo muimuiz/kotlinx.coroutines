@@ -37,7 +37,7 @@ fun main() {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-01.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-01.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-01.kt).-->
 <!--{type="note"}-->
@@ -131,7 +131,7 @@ fun main() {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-02.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-02.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-02.kt).-->
 <!--{type="note"}-->
@@ -182,7 +182,7 @@ fun main() = runBlocking<Unit> { // start main coroutine
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-03.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-03.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-03.kt).-->
 <!--{type="note"}-->
@@ -264,7 +264,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-04.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-04.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-04.kt).-->
 <!--{type="note"}-->
@@ -352,7 +352,7 @@ fun main() = runBlocking { // this: CoroutineScope
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-05.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-05.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-05.kt).-->
 <!--{type="note"}-->
@@ -437,7 +437,7 @@ fun main() = runBlocking { // this: CoroutineScope
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-06.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-06.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-06.kt).-->
 <!--{type="note"}-->
@@ -508,7 +508,7 @@ suspend fun doWorld() {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-07.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-07.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-07.kt).-->
 <!--{type="note"}-->
@@ -572,7 +572,7 @@ fun main() = runBlocking {
 }
 -->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-08.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-08.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-08.kt).-->
 <!--{type="note"}-->
@@ -626,7 +626,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-09.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-basic-09.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-basic-09.kt).-->
 <!--{type="note"}-->
