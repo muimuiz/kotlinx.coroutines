@@ -499,23 +499,51 @@ fun main() = runBlocking<Unit> {
 ```
 <!-- -->
 
-## 中置 flow 演算子
+## 中間 flow オペレーター
 <!--## Intermediate flow operators-->
 
+Flow はコレクションや sequence で行うのと同様にオペレーター（演算子）で変換することができます。
+中間オペレーター (intermediate operator) は上流の flow に適用されて下流へと flow を返します。
+これらのオペレーターは、flow と同様にコールドです。
+こうしたオペレーターの呼び出し自体はサスペンド関数ではありません。
+これはすぐに働いて、新たに変換された flow の定義を返します。
+<!--
 Flows can be transformed with operators, just as you would with collections and sequences. 
 Intermediate operators are applied to an upstream flow and return a downstream flow. 
 These operators are cold, just like flows are. A call to such an operator is not
 a suspending function itself. It works quickly, returning the definition of a new transformed flow. 
+-->
 
+基本のオペレーターは [map] や [filter] のようななじみの名前を持っています。
+Sequence との重要な違いは、これらのオペレーター内部のコード・ブロックが
+サスペンド関数を呼ぶことができるということです。
+<!--
 The basic operators have familiar names like [map] and [filter]. 
 The important difference to sequences is that blocks of 
 code inside these operators can call suspending functions. 
+-->
 
+例えば、次のように受信したリクエストへの処理がサスペンド関数により実装された長くかかる操作であったとしても、
+リクエストの flow は [map] オペレーターで結果へとマップできます。
+<!--
 For example, a flow of incoming requests can be
 mapped to the results with the [map] operator, even when performing a request is a long-running
 operation that is implemented by a suspending function:   
+-->
 
 ```kotlin
+suspend fun performRequest(request: Int): String {
+    delay(1000) // 長時間の非同期処理を模倣しています
+    return "response $request"
+}
+
+fun main() = runBlocking<Unit> {
+    (1..3).asFlow() // リクエストの flow
+        .map { request -> performRequest(request) }
+        .collect { response -> println(response) }
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -531,14 +559,19 @@ fun main() = runBlocking<Unit> {
         .collect { response -> println(response) }
 }
 //sampleEnd
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-08.kt).
+> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-08.kt) で入手できます。
 >
-{type="note"}
+>
+<!-- > You can get the full code from [here](../../kotlinx-coroutines-core/jvm/test/guide/example-flow-08.kt).-->
+<!--{type="note"}-->
 
+これは、それぞれの行が 1 秒ごとに現れる以下の 3 行を出力します。
+<!--
 It produces the following three lines, each line appearing after each second:
+-->
 
 ```text                                                                    
 response 1
