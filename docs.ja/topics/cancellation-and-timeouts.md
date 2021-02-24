@@ -1,6 +1,6 @@
 <!--- TEST_NAME CancellationGuideTest -->
 
-[//]: # (title: Cancellation and timeouts)
+<!--[//]: # (title: Cancellation and timeouts)-->
 # キャンセルとタイムアウト
 
 この節では、コルーチンのキャンセルとタイムアウトを取り扱います。
@@ -12,7 +12,7 @@
 長時間稼働するアプリケーションにおいては、バックグラウンドのコルーチンを細かく制御する必要があるかもしれません。
 例えば、コルーチンを起動したページをユーザーが閉じてしまい、
 そのコルーチンの結果はもはや不要で、操作をキャンセルしてもよいようになるかもしれません。
-[launch] 関数は、稼働しているコルーチンのキャンセルに用いることのできる [Job] を返します。
+[launch] 関数が返す [Job] は、稼働しているコルーチンのキャンセルに用いることができます。
 <!--
 In a long-running application you might need fine-grained control on your background coroutines.
 For example, a user might have closed the page that launched a coroutine and now its result
@@ -54,7 +54,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-01.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-01.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-01.kt).-->
 <!--{type="note"}-->
@@ -143,7 +143,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-02.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-02.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-02.kt).-->
 <!--{type="note"}-->
@@ -229,7 +229,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-03.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-03.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-03.kt).-->
 <!--{type="note"}-->
@@ -256,7 +256,7 @@ main: Now I can quit.
 
 キャンセル可能なサスペンド関数は、キャンセルのとき通常の方法で扱うことができる [CancellationException] を送出します。
 例えば、`try {...} finally {...}` 式と Kotlin の `use` 関数は、
-コルーチンがキャンセルされたときその終了処理を通常のように実行します。
+コルーチンがキャンセルされたときもその終了処理を通常のように実行します。
 <!--
 Cancellable suspending functions throw [CancellationException] on cancellation which can be handled in 
 the usual way. For example, `try {...} finally {...}` expression and Kotlin `use` function execute their
@@ -303,7 +303,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-04.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-04.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-04.kt).-->
 <!--{type="note"}-->
@@ -326,15 +326,17 @@ main: Now I can quit.
 
 <!--- TEST -->
 
-## キャンセル可能でないブロックを実行する
+## キャンセル不能ブロックの実行
 <!--## Run non-cancellable block-->
 
-上の例での `finally` ブロックにおいてサスペンド関数を使おうとすれば、
-このコードを実行しているコルーチンがキャンセルされているために常に [CancellationException] を発生させます。
-通常、これは問題とはなりません。なぜなら、すべての行儀がよい終了操作（ファイルを閉じることや、ジョブをキャンセルすること、任意の種類の通信チャネルを閉じること）は、ふつう非ブロッキングであり、いかなるサスペンド関数も関与していないからです。
-しかし、キャンセルされたコルーチンにおいてサスペンドする必要があるまれな場合には、
-対応するコードを [withContext] 関数と [NonCancellable] コンテキストを用いて、
-以下の例に示すように `withContext(NonCancellable) {...}` で包むことができます。
+上の例の `finally` ブロックにおいてサスペンド関数を使おうとすれば、常に [CancellationException] を発生させます。
+このコードを実行しているコルーチンがキャンセルされているためです。
+通常、これは問題とはなりません。
+なぜなら、すべての行儀のよい終了操作（ファイルを閉じることや、ジョブをキャンセルすること、任意の種類の通信チャネルを閉じること）は、
+ふつう非ブロッキングであり、いかなるサスペンド関数も関与していないからです。
+しかしまれな場合として、キャンセルされたコルーチンでサスペンドする必要があるならば、
+以下の例に示すように対応するコードを [withContext] 関数と [NonCancellable]（キャンセル不能）コンテキストを用いて、
+`withContext(NonCancellable) {...}` で包むことができます。
 <!--
 Any attempt to use a suspending function in the `finally` block of the previous example causes
 [CancellationException], because the coroutine running this code is cancelled. Usually, this is not a 
@@ -392,7 +394,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-05.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-05.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-05.kt).-->
 <!--{type="note"}-->
@@ -414,9 +416,9 @@ main: Now I can quit.
 
 コルーチンの実行をキャンセルする理由で最も明らかで実用的なものは、
 その実行時間があるタイムアウト（時間切れ）の時間を超えたからというものです。
-対応する [Job] への参照を手動で追跡し、
-間延びした追跡コルーチンをキャンセルするために別のコルーチンを起動することもできますが、
-これを行う [withTimeout] 関数が使えます。
+対応する [Job] への参照を手動で追跡して、
+一定の遅延の後に追跡していたコルーチンをキャンセルするための別のコルーチンを起動することもできますが、
+それを行う [withTimeout] 関数がすでに用意されています。
 次の例を見てみましょう。
 <!--
 The most obvious practical reason to cancel execution of a coroutine 
@@ -450,7 +452,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-06.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-06.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-06.kt).-->
 <!--{type="note"}-->
@@ -521,7 +523,7 @@ fun main() = runBlocking {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-07.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-07.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-07.kt).-->
 <!--{type="note"}-->
@@ -549,7 +551,7 @@ Result is null
 
 [withTimeout] におけるタイムアウトの発生は、
 ブロック内で実行されているコードに関して非同期的 (asynchronous) で、
-いつでも、たとえタイムアウトのブロックの内部から戻る直前であったとしても起こる可能性があります。
+いつでも、たとえタイムアウトするブロックの内部から戻る直前であったとしても起こる可能性があります。
 ブロックの内側で何らかのリソースを開いたり取得したりしてるならば、
 そのブロックの外側で閉じたり開放したりする必要があることを覚えておきましょう。
 <!--
@@ -624,7 +626,7 @@ fun main() {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-08.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-08.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-08.kt).-->
 <!--{type="note"}-->
@@ -712,7 +714,7 @@ fun main() {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-09.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-cancel-09.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-cancel-09.kt).-->
 <!--{type="note"}-->
