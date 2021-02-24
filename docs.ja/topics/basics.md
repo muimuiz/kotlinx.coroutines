@@ -1,5 +1,5 @@
 <!--- TEST_NAME BasicsGuideTest -->
-[//]: # (title: Coroutines basics)
+<!--[//]: # (title: Coroutines basics)-->
 # コルーチンの基本
 
 この節ではコルーチン (coroutine) の基本コンセプトについて取り扱います。
@@ -316,7 +316,8 @@ we can launch coroutines in the specific scope of the operation we are performin
 -->
 
 ここでの例にそって言えば、まず [runBlocking] コルーチン・ビルダーを用いてコルーチンへと変更された `main` 関数があります。
-`runBlocking` を含むすべてのコルーチン・ビルダーは、[CoroutineScope] のインスタンスをそのコード・ブロックのスコープへと追加します。
+`runBlocking` を含むすべてのコルーチン・ビルダーは、
+[CoroutineScope] のインスタンスをそのコード・ブロックのスコープ (scope) へと追加します。
 外側のコルーチン（ここでの例では `runBlocking`）は、そのスコープ内で起動されたすべてのコルーチンが完了するまで完了しないため、
 明示的に `join` することなくこのスコープでコルーチンを起動できます。
 よって、ここでの例は次のようにもっと単純なものにできます。
@@ -367,8 +368,8 @@ World!
 ## スコープ・ビルダー
 <!--## Scope builder-->
 
-異なったビルダーによって与えられるコルーチンのスコープに加えて、
-[coroutineScope][_coroutineScope] ビルダーを用いれば独自のスコープを宣言することができます。
+ビルダーによって与えられるコルーチンのスコープとは別に、
+[coroutineScope][_coroutineScope] ビルダーを用いればあなた自身のスコープを宣言することができます。
 これは新たなコルーチンのスコープを作成し、起動された子のコルーチンすべてが完了するまで完了しません。
 <!--
 In addition to the coroutine scope provided by different builders, it is possible to declare your own scope using the
@@ -464,12 +465,12 @@ Note that right after the "Task from coroutine scope" message (while waiting for
 <!--## Extract function refactoring-->
 
 `launch { ... }` 内部にあるコードのブロックを別の関数へと抽出してみましょう。
-このコードに対する「関数抽出」(Extract function) リファクタリング（構造整理）を行う場合、
+このコードに対する「関数抽出」リファクタリング（構造の整理）を行う場合、
 新たな関数は `suspend` 修飾子を付けた関数となります。
 これは __サスペンド関数__ (suspending function) の最初の例です。
 サスペンド関数はコルーチンの内部で通常の関数のように用いることができますが、
-（ここでの例の `delay` のように）別のコルーチンの実行をサスペンドするために
-さらに他のサスペンド関数を用いることができるというのがその新たな機能です。
+その新しい機能は、（ここでの例の `delay` のように）さらに別のサスペンド関数を
+コルーチンの実行をサスペンドするために用いることができるということです。
 <!--
 Let's extract the block of code inside `launch { ... }` into a separate function. When you 
 perform "Extract function" refactoring on this code, you get a new function with the `suspend` modifier.
@@ -524,7 +525,7 @@ World!
 その場合、抽出関数の `suspend` 修飾子だけでは十分ではありません
 （訳注：コルーチン・ビルダー launch は CoroutineScope のメソッドなので）。
 `doWorld` を `CoroutineScope` における拡張メソッドにするというのがひとつの解決法ですが、
-API を明快なものとしないので、これはいつでもは適用できないでしょう。
+API をより明快なものとするものではないので、これはいつでもは適用できないでしょう。
 慣用的な解決策は、明示的な `CoroutineScope` を対象となる関数を含むクラスのフィールドとして持つか、
 外部のクラスが `CoroutineScope` を実装するときには非明示的に持つかすることです。
 最後の手段として、[CoroutineScope(coroutineContext)][CoroutineScope()] を用いることはできますが、
