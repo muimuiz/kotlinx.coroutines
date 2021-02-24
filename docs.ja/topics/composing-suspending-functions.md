@@ -97,7 +97,7 @@ suspend fun doSomethingUsefulTwo(): Int {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-01.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-01.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-01.kt).-->
 <!--{type="note"}-->
@@ -171,7 +171,7 @@ suspend fun doSomethingUsefulTwo(): Int {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-02.kt).-->
 <!--{type="note"}-->
@@ -198,7 +198,8 @@ Note that concurrency with coroutines is always explicit.
 <!--## Lazily started async-->
 
 オプションで、[async] の `start` パラメーターに [CoroutineStart.LAZY] を設定することにより [async] をレイジー (lazy) にすることができます（訳注：一般に lazy〔遅延〕はそれが必要となるときまで実際の実行を遅延するときに使われるキーワード）。
-このモードでは、コルーチンはその結果が [await][Deferred.await] により要求されたとき、あるいは `Job` の [start][Job.start] 関数が呼び出されたときからのみ開始されます。
+このモードでは、コルーチンはその結果が [await][Deferred.await] により要求されたとき、
+あるいは `Job` の [start][Job.start] 関数が呼び出されたときになってから開始されます。
 以下の例を実行してみましょう。
 <!--
 Optionally, [async] can be made lazy by setting its `start` parameter to [CoroutineStart.LAZY]. 
@@ -248,7 +249,7 @@ suspend fun doSomethingUsefulTwo(): Int {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-03.kt).-->
 <!--{type="note"}-->
@@ -264,8 +265,8 @@ Completed in 1017 ms
 
 <!--- TEST ARBITRARY_TIME -->
 
-すなわち、ここでは 2 つのコルーチンが定義されていますが、前の例とは異なり実行されません。
-代わりに、[start][Job.start] を呼ぶことで実際いつ実行を開始するかについて、その制御はプログラマにまかされています。
+ここでは 2 つのコルーチンが定義されていますが、前の例とは異なり実行されません。
+代わりに、[start][Job.start] を呼んで実際いつ実行を開始するか、制御はプログラマにまかされています。
 はじめに `one` を開始し、その後、`two` を開始して、さらにその後でこれら別々のコルーチンが完了するのを待ちます。
 <!--
 So, here the two coroutines are defined but not executed as in the previous example, but the control is given to
@@ -277,7 +278,8 @@ start `one`, then start `two`, and then await for the individual coroutines to f
 単に `println` の中で [await][Deferred.await] を読んだだけでは、逐次的なふるまいとなることに注意してください。
 これは、 [await][Deferred.await] がコルーチンの実行を開始し完了を待つためであり、
 レイジーであることに求める有効な事例 (use case) ではありません。
-`async(start = CoroutineStart.LAZY)` が有効な場合とは、値の計算にサスペンド関数が含まれている場合に標準の `lazy` 関数の代替となることです。
+`async(start = CoroutineStart.LAZY)` が有効な場合とは、
+値の計算にサスペンド関数が含まれている場合に標準の `lazy` 関数の代替となることです。
 <!--
 Note that if we just call [await][Deferred.await] in `println` without first calling [start][Job.start] on individual 
 coroutines, this will lead to sequential behavior, since [await][Deferred.await] starts the coroutine 
@@ -289,9 +291,10 @@ standard `lazy` function in cases when computation of the value involves suspend
 ## async スタイルの関数
 <!--## Async-style functions-->
 
-明示的な [GlobalScope] 参照を持つ [async] コルーチン・ビルダーを用いて、
+[GlobalScope] 参照を明示した [async] コルーチン・ビルダーを用いて、
 `doSomethingUsefulOne` と `doSomethingUsefulTwo` を __非同期__ (asynchronously) に呼び出す async スタイルの関数を定義できます。
-こうした関数の名前に "...Async" の接尾をつけて、それらが非同期計算を始めるだけであり、結果を得るためには結果の遅延値を使う必要があるということを強調することにします。
+こうした関数の名前には "...Async" の接尾をつけて、
+それらが非同期計算を始めるだけであり、結果を得るためには結果の遅延値を使う必要があるということを強調することにします。
 <!--
 We can define async-style functions that invoke `doSomethingUsefulOne` and `doSomethingUsefulTwo`
 _asynchronously_ using the [async] coroutine builder with an explicit [GlobalScope] reference.
@@ -396,7 +399,7 @@ suspend fun doSomethingUsefulTwo(): Int {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-04.kt).-->
 <!--{type="note"}-->
@@ -427,7 +430,7 @@ Completed in 1085 ms
 開発者のためにエラーを記録し報告する一方で、プログラムはそれ以外の操作を継続できるでしょう。
 しかしここでは、それを開始した操作が中断されているにも関わらず、
 `somethingUsefulOneAsync` が依然としてバックグラウンドで実行されています。
-この問題は、以下の節で示すように構造化並列性 (structured concurrency) の元では起こりません。
+この問題は、以下の節で示すように構造化された並行性 (structured concurrency) の元では起こりません。
 <!--
 Consider what happens if between the `val one = somethingUsefulOneAsync()` line and `one.await()` expression there is some logic
 error in the code and the program throws an exception and the operation that was being performed by the program aborts. 
@@ -512,7 +515,7 @@ suspend fun doSomethingUsefulTwo(): Int {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-05.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-05.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-05.kt).-->
 <!--{type="note"}-->
@@ -592,7 +595,7 @@ suspend fun failedConcurrentSum(): Int = coroutineScope {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-06.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-compose-06.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-compose-06.kt).-->
 <!--{type="note"}-->
