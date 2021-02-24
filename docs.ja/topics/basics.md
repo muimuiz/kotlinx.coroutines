@@ -88,7 +88,7 @@ That is because [delay] is a special _suspending function_ that does not block a
 coroutine, and it can be only used from a coroutine.
 -->
 
-## ブロッキングと非ブロッキングの世界を橋渡しする
+## ブロッキングと非ブロッキングの世界をつなぐ
 <!--## Bridging blocking and non-blocking worlds-->
 
 上の最初の例は、__非ブロッキング__ (non-blocking) の `delay(...)` と __ブロッキング__ (blocking) する `Thread.sleep(...)` を
@@ -230,7 +230,7 @@ class MyTest {
 
 <!--- CLEAR -->
 
-## ジョブを待機する
+## Job を待機する
 <!--## Waiting for a job-->
 
 別のコルーチンが動いている間、決まった時間の遅延を行うというアプローチはよいものではありません。
