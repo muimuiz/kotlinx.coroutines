@@ -13,7 +13,7 @@ This section covers various approaches to composition of suspending functions.
 
 別のところで定義され、リモートのサービスコールを行ったり計算を行ったりするような
 何かしら有用なことを行う 2 つのサスペンド関数 (suspending function) があるとしましょう。
-以下の例のために、そうした有用なものをそれぞれが実際には単に遅延を行うだけのもので模倣しています。
+以下の例のために、それぞれが実際には単に遅延を行うだけのものでそうした有用なものを模倣しています。
 <!--
 Assume that we have two suspending functions defined elsewhere that do something useful like some kind of 
 remote service call or computation. We just pretend they are useful, but actually each one just
@@ -187,7 +187,7 @@ Completed in 1017 ms
 
 <!--- TEST ARBITRARY_TIME -->
 
-この 2 つのコルーチンは並行して実行されるので 2 倍速くなっています。
+この 2 つのコルーチンは並行して実行されるので（訳注：実際には delay させているだけのため）2 倍速くなっています。
 コルーチンによる並行性は常に明示されることに注意してください。
 <!--
 This is twice as fast, because the two coroutines execute concurrently. 
