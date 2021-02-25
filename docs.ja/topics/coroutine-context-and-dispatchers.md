@@ -14,7 +14,7 @@ type, defined in the Kotlin standard library.
 
 コルーチンのコンテキストはさまざまな要素の集まりです。
 主たる要素は、前に見たコルーチンの [Job] （ジョブ）であり、
-そして、この節で扱うそのディスパッチャー (dispatcher、振り分け係) です。 
+そして、この節で扱うそのディスパッチャー (dispatcher、発送係・配車係の意) です。 
 <!--
 The coroutine context is a set of various elements. The main elements are the [Job] of the coroutine, 
 which we've seen before, and its dispatcher, which is covered in this section.
@@ -24,7 +24,7 @@ which we've seen before, and its dispatcher, which is covered in this section.
 <!--## Dispatchers and threads-->
 
 コルーチンのコンテキストには、対応するコルーチンが実行のためにどの（ひとつまたは複数の）スレッドを用いるか決定する
-__コルーチン・ディスパッチャー__ (coroutine dispather) が含まれています（[CoroutineDispatcher] 参照）。このコルーチン・ディスパッチャーは、コルーチンの実行を特定のスレッドへと制限 (confine) するか、
+__コルーチン・ディスパッチャー__ (coroutine dispather) が含まれています（[CoroutineDispatcher] 参照）。このコルーチン・ディスパッチャーは、コルーチンの実行を特定のスレッドへと制約 (confine) するか、
 スレッド・プールへと振り分けるか、あるいは制約を受けることなく (unconfined) 実行させるかします。
 <!--
 The coroutine context includes a _coroutine dispatcher_ (see [CoroutineDispatcher]) that determines what thread or threads 
@@ -35,7 +35,7 @@ to a specific thread, dispatch it to a thread pool, or let it run unconfined.
 [launch] や [async] のようなすべてのコルーチン・ビルダーはオプションの
 [CoroutineContext](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines/-coroutine-context/)
 パラメーターを受け取ります。
-これは、新しいコルーチンに対するディスパッチャーと他のコンテキストの要素を明示的に指定するために用いることができます。
+これは、新しいコルーチンに対するディスパッチャーや他のコンテキストの要素を明示的に指定するために用いることができます。
 <!--
 All coroutine builders like [launch] and [async] accept an optional 
 [CoroutineContext](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.coroutines/-coroutine-context/)
@@ -83,7 +83,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-01.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-01.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-01.kt).-->
 <!--{type="note"}-->
@@ -112,7 +112,7 @@ context of the main `runBlocking` coroutine which runs in the `main` thread.
 -->
 
 [Dispatchers.Unconfined] は、やはり `main` スレッドで実行されているように見えますが、
-実際には後で説明する異なった仕組みの特殊なディスパッチャーです。
+実際には後で説明する異なった仕組みを持つ特殊なディスパッチャーです。
 <!--
 [Dispatchers.Unconfined] is a special dispatcher that also appears to run in the `main` thread, but it is,
 in fact, a different mechanism that is explained later.
@@ -140,7 +140,7 @@ In a real application it must be either released, when no longer needed, using t
 function, or stored in a top-level variable and reused throughout the application.  
 -->
 
-## 非制約と制約されたディスパッチャー
+## 非制約のディスパッチャーと制約されたディスパッチャー
 <!--## Unconfined vs confined dispatcher-->
 
 [Dispatchers.Unconfined] コルーチン・ディスパッチャーは、
@@ -155,9 +155,9 @@ suspending function that was invoked. The unconfined dispatcher is appropriate f
 consume CPU time nor update any shared data (like UI) confined to a specific thread. 
 -->
 
-一方において、ディスパッチャーはデフォルトで外側の [CoroutineScope] から引き継がれます。
+一方、ディスパッチャーはデフォルトで外側の [CoroutineScope] から引き継がれます。
 特に [runBlocking] コルーチンに対するデフォルト・ディスパッチャーは、起動したスレッドに制限されます。
-この継承により、予測可能な FIFO スケジューリングのあるこのスレッドに制限された実行を行うという効果があります。
+この引き継ぎにより、予測可能な FIFO スケジューリングのあるこのスレッドへと制限されている実行を行うという効果があります。
 <!--
 On the other side, the dispatcher is inherited from the outer [CoroutineScope] by default. 
 The default dispatcher for the [runBlocking] coroutine, in particular,
@@ -198,7 +198,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-02.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-02.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-02.kt).-->
 <!--{type="note"}-->
@@ -217,7 +217,7 @@ main runBlocking: After delay in thread main
 
 このように、`runBlocking {...}` から引き継いだコンテキストをもつコルーチンは
 `main` スレッドにおいて実行を続けますが、
-非制約のコルーチンは [delay] 関数が用いられているデフォルト実行 (default executor) スレッドで再開します。
+非制約のコルーチンは [delay] 関数が用いられている default executor スレッドで再開します。
 <!--
 So, the coroutine with the context inherited from `runBlocking {...}` continues to execute
 in the `main` thread, while the unconfined one resumes in the default executor thread that the [delay]
@@ -308,7 +308,7 @@ Learn more about coroutines debugging in the [tutorial](https://kotlinlang.org/d
 各ログ・ステートメントにおいてログ・ファイルにスレッドの名前を出力することです。
 この機能は、ログのフレームワークによって普遍的にサポートされています。
 コルーチンを用いる場合には、スレッド名だけでは状況の多くはわからないので、
-`kotlinx.coroutines` にはこれを用意にするデバッグ機能が含まれています。
+`kotlinx.coroutines` にはこれを容易にするデバッグ機能が含まれています。
 <!--
 Another approach to debugging applications with 
 threads without Coroutine Debugger is to print the thread name in the log file on each log statement. This feature is universally supported
@@ -353,7 +353,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-03.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-03.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-03.kt).-->
 <!--{type="note"}-->
@@ -400,7 +400,7 @@ is consecutively assigned to all created coroutines when the debugging mode is o
 ## スレッド間をジャンプする
 <!--## Jumping between threads-->
 
-以下のコードを JVM オプションに `-Dkotlinx.coroutines.debug` をつけて実行してみましょう（[前節](#コルーチンとスレッドをデバッグする)を参照）。
+以下のコードを JVM オプションに `-Dkotlinx.coroutines.debug` を付けて実行してみましょう（[前節](#コルーチンとスレッドをデバッグする)を参照）。
 <!--
 Run the following code with the `-Dkotlinx.coroutines.debug` JVM option (see [debug](#debugging-coroutines-and-threads)):
 -->
@@ -441,7 +441,7 @@ fun main() {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-04.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-04.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-04.kt).-->
 <!--{type="note"}-->
@@ -496,7 +496,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-05.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-05.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-05.kt).-->
 <!--{type="note"}-->
@@ -593,7 +593,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-06.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-06.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-06.kt).-->
 <!--{type="note"}-->
@@ -660,7 +660,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-07.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-07.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-07.kt).-->
 <!--{type="note"}-->
@@ -683,7 +683,8 @@ Now processing of the request is complete
 ## デバックのためにコルーチンに名前をつける
 <!--## Naming coroutines for debugging-->
 
-自動的に割り当てられる識別子は、コルーチンが何度もログを記録し、同じコルーチンから来るログの記録を突き合わせる必要だけがある場合には有用です。
+自動的に割り当てられる識別子は、コルーチンが何度もログを記録し、
+同じコルーチンから来るログの記録を突き合わせる必要だけがある場合には有用です。
 しかし、特定のリクエストの処理にコルーチンが結びついているときや、
 特定のバックグラウンド処理を行っている場合には、
 デバッグ目的のために明示的に名前をつけるのがよいでしょう。
@@ -744,7 +745,7 @@ fun main() = runBlocking(CoroutineName("main")) {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-08.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-08.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-08.kt).-->
 <!--{type="note"}-->
@@ -793,7 +794,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-09.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-09.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-09.kt).-->
 <!--{type="note"}-->
@@ -816,13 +817,14 @@ I'm working in thread DefaultDispatcher-worker-1 @test#2
 アプリケーションがあるライフサイクルを持つオブジェクトを持っていて、
 そのオブジェクトはコルーチンではないと仮定します。
 例えば、Android アプリケーションを書いていて、
-Android アクティビティーのコンテキストにおいて、データの取得と更新、アニメーションの実行など非同期操作を実行するためさまざまなコルーチンを起動するとします。
+Android アクティビティーのコンテキストにおいて、
+データの取得と更新、アニメーションの実行など非同期操作を実行するためさまざまなコルーチンを起動するとします。
 アクティビティーが破棄されたとき、メモリー・リークを避けるためにこれらコルーチンすべてがキャンセルされなければなりません。
 もちろん、コンテキストやジョブを手動で操作して、
 アクティビティーのライフサイクルとそのコルーチンとを結びつけることもできますが、
 `kotlinx.coroutines` はそれをカプセル化する [CoroutineScope] という抽象化を提供しています。
 すべてのコルーチン・ビルダーがコルーチン・スコープの拡張として宣言されているので、
-それにはすでに馴染みがあるでしょう。
+コルーチン・スコープはすでに馴染みがあるものです。
 <!--
 Let us put our knowledge about contexts, children and jobs together. Assume that our application has
 an object with a lifecycle, but that object is not a coroutine. For example, we are writing an Android application
@@ -833,9 +835,11 @@ and its coroutines, but `kotlinx.coroutines` provides an abstraction encapsulati
 You should be already familiar with the coroutine scope as all coroutine builders are declared as extensions on it. 
 -->
 
-アクティビティーのライフサイクルと結びついた [CoroutineScope] のインスタンスを作成することによって、コルーチンのライフサイクルを管理します。
+アクティビティーのライフサイクルと結びついた [CoroutineScope] のインスタンスを作成することによって、
+コルーチンのライフサイクルを管理します。
 `CoroutineScope` のインスタンスは [CoroutineScope()] あるいは [MainScope()] ファクトリー関数で作成することができます。
-前者は一般目的のスコープを作成し、後者は [Dispatchers.Main] をデフォルトのディスパッチャとして使用してて UI アプリケーション用のスコープを作成します。
+前者は一般目的のスコープを作成し、
+後者は [Dispatchers.Main] をデフォルトのディスパッチャとして使用した UI アプリケーション用のスコープを作成します。
 <!--
 We manage the lifecycles of our coroutines by creating an instance of [CoroutineScope] tied to 
 the lifecycle of our activity. A `CoroutineScope` instance can be created by the [CoroutineScope()] or [MainScope()]
@@ -952,7 +956,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-10.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-10.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-10.kt).-->
 <!--{type="note"}-->
@@ -1050,7 +1054,7 @@ fun main() = runBlocking<Unit> {
 -->
 <!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> 完全なコードは [ここ](../../kotlinx-coroutines-core/jvm/test/guide/example-context-11.kt) で入手できます。
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-context-11.kt) で入手できます。
 >
 <!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-context-11.kt).-->
 <!--{type="note"}-->
