@@ -207,7 +207,7 @@ Done!
 ## パイプライン
 <!--## Pipelines-->
 
-パイプライン (pipeline) は――潜在的には無限の――値のストリームを生産し続けるようなパターンです。
+パイプライン (pipeline) は――潜在的には無限の――値のストリームを生み出し続けるようなパターンです。
 <!--
 A pipeline is a pattern where one coroutine is producing, possibly infinite, stream of values:
 -->
@@ -251,7 +251,7 @@ The main code starts and connects the whole pipeline:
 <!--- CLEAR -->
 
 ```kotlin
-    val numbers = produceNumbers() // 1 からそれ以降の整数を生産する
+    val numbers = produceNumbers() // 1 からそれ以降の整数を生み出します
     val squares = square(numbers) // 整数の平方
     repeat(5) {
         println(squares.receive()) // はじめの 5 つを表示
@@ -303,9 +303,8 @@ Done!
 <!-- -->
 
 > コルーチンを生成する関数はすべて [CoroutineScope] の拡張として定義されています。
-> これにより、アプリケーションにグローバルなコルーチンが残らないことを確かなものとする
-> [構造化された並行性](composing-suspending-functions.md#async-における構造化された並行性)
-> を頼ることができます。
+> これにより、[構造化された並行性](composing-suspending-functions.md#async-を使った構造化された並行性)
+> を頼ることができ、アプリケーションにグローバルなコルーチンが残らないことが確かなものとなります。
 >
 <!--
 > All functions that create coroutines are defined as extensions on [CoroutineScope],
@@ -315,34 +314,64 @@ Done!
 -->
 <!--{type="note"}-->
 
-## Prime numbers with pipeline
+## パイプラインを使った素数
+<!--## Prime numbers with pipeline-->
 
+コルーチンのパイプラインを使って素数を生み出すという極端な例を考えてみましょう。
+数の無限の長さの列から始めます。
+<!--
 Let's take pipelines to the extreme with an example that generates prime numbers using a pipeline 
 of coroutines. We start with an infinite sequence of numbers.
+-->
 
 ```kotlin
 fun CoroutineScope.numbersFrom(start: Int) = produce<Int> {
     var x = start
-    while (true) send(x++) // infinite stream of integers from start
+    while (true) send(x++) // はじめから整数の無限のストリーム
 }
 ```
+<!--kotlin
+fun CoroutineScope.numbersFrom(start: Int) = produce<Int> {
+    var x = start
+    while (true) send(x++) // infinite stream of integers from start
+}
+-->
 
+続くパイプラインの段階では、入ってくる数をフィルターし、
+与えられた素数で割り切れるすべての数を取り除きます。
+<!--
 The following pipeline stage filters an incoming stream of numbers, removing all the numbers 
 that are divisible by the given prime number:
+-->
 
 ```kotlin
 fun CoroutineScope.filter(numbers: ReceiveChannel<Int>, prime: Int) = produce<Int> {
     for (x in numbers) if (x % prime != 0) send(x)
 }
 ```
+<!--kotlin
+fun CoroutineScope.filter(numbers: ReceiveChannel<Int>, prime: Int) = produce<Int> {
+    for (x in numbers) if (x % prime != 0) send(x)
+}
+-->
 
+2 から始まる数のストリームから始め、現在のチャンネルから素数を取り出し、
+見つかった各素数に対して新しいパイプラインの段階を起動することで、パイプラインを構築していきます。
+<!--
 Now we build our pipeline by starting a stream of numbers from 2, taking a prime number from the current channel, 
 and launching new pipeline stage for each prime number found:
+-->
  
 ```Plain Text
 numbersFrom(2) -> filter(2) -> filter(3) -> filter(5) -> filter(7) ... 
 ```
- 
+
+以下の例では、メイン・スレッドのコンテキストですべてのパイプラインを実行し、最初の 10 個の素数を表示します。
+すべてのコルーチンがメインの [runBlocking] コルーチンのスコープで起動されるため、
+開始したコルーチンすべてのリストを明示的にとっておく必要はありません。
+最初の 10 個の素数を表示した後で、子のコルーチンすべてをキャンセルするために
+[cancelChildren][kotlin.coroutines.CoroutineContext.cancelChildren] 拡張関数を使用しています。
+<!--
 The following example prints the first ten prime numbers, 
 running the whole pipeline in the context of the main thread. Since all the coroutines are launched in
 the scope of the main [runBlocking] coroutine 
@@ -350,10 +379,20 @@ we don't have to keep an explicit list of all the coroutines we have started.
 We use [cancelChildren][kotlin.coroutines.CoroutineContext.cancelChildren] 
 extension function to cancel all the children coroutines after we have printed
 the first ten prime numbers.
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+    var cur = numbersFrom(2)
+    repeat(10) {
+        val prime = cur.receive()
+        println(prime)
+        cur = filter(cur, prime)
+    }
+    coroutineContext.cancelChildren() // main を終了させるためすべての子をキャンセルします
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
@@ -377,14 +416,18 @@ fun CoroutineScope.numbersFrom(start: Int) = produce<Int> {
 fun CoroutineScope.filter(numbers: ReceiveChannel<Int>, prime: Int) = produce<Int> {
     for (x in numbers) if (x % prime != 0) send(x)
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-05.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-05.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-05.kt).-->
+<!--{type="note"}-->
 
+このコードの出力は次のようになります。
+<!--
 The output of this code is:
+-->
 
 ```text
 2
@@ -408,6 +451,15 @@ Replace `produce` with `iterator`, `send` with `yield`, `receive` with `next`,
 `ReceiveChannel` with `Iterator`, and get rid of the coroutine scope. You will not need `runBlocking` either.
 However, the benefit of a pipeline that uses channels as shown above is that it can actually use 
 multiple CPU cores if you run it in [Dispatchers.Default] context.
+<!--
+Note that you can build the same pipeline using 
+[`iterator`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/iterator.html) 
+coroutine builder from the standard library. 
+Replace `produce` with `iterator`, `send` with `yield`, `receive` with `next`, 
+`ReceiveChannel` with `Iterator`, and get rid of the coroutine scope. You will not need `runBlocking` either.
+However, the benefit of a pipeline that uses channels as shown above is that it can actually use 
+multiple CPU cores if you run it in [Dispatchers.Default] context.
+-->
 
 Anyway, this is an extremely impractical way to find prime numbers. In practice, pipelines do involve some
 other suspending invocations (like asynchronous calls to remote services) and these pipelines cannot be
