@@ -1,5 +1,5 @@
 <!--[//]: # (title: Coroutines guide)-->
-# コルーチンのガイド
+# コルーチン・ガイド
 
 Kotlin は言語として、
 他のさまざまなライブラリーがコルーチンを利用できるようにするために、
@@ -47,7 +47,7 @@ In order to use coroutines as well as follow the examples in this guide, you nee
 * [サスペンド関数を構成する](composing-suspending-functions.md) ([Composing suspending functions](https://kotlinlang.org/docs/composing-suspending-functions.html))
 * [コルーチンのコンテキストとディスパッチャー](coroutine-context-and-dispatchers.md) ([Coroutine context and dispatchers](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html))
 * [非同期の Flow](flow.md)（部分訳） ([Asynchronous Flow](https://kotlinlang.org/docs/flow.html))
-* [Channels](https://kotlinlang.org/docs/channels.html)
+* [チャンネル](channels.me)（部分訳） ([Channels](https://kotlinlang.org/docs/channels.html))
 * [Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.html)
 * [Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html)
 * [Select expression (experimental)](https://kotlinlang.org/docs/select-expression.html)
