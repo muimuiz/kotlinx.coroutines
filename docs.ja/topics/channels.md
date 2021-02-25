@@ -243,7 +243,7 @@ fun CoroutineScope.square(numbers: ReceiveChannel<Int>): ReceiveChannel<Int> = p
 }
 -->
 
-メインのコードは以下のようにこのパイプライン全体を開始し接続します。
+メインのコードはこのパイプライン全体を開始し接続します。
 <!--
 The main code starts and connects the whole pipeline:
 -->
@@ -251,6 +251,15 @@ The main code starts and connects the whole pipeline:
 <!--- CLEAR -->
 
 ```kotlin
+    val numbers = produceNumbers() // 1 からそれ以降の整数を生産する
+    val squares = square(numbers) // 整数の平方
+    repeat(5) {
+        println(squares.receive()) // はじめの 5 つを表示
+    }
+    println("Done!") // これで終了
+    coroutineContext.cancelChildren() // 子のコルーチンをキャンセルする
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
@@ -274,27 +283,37 @@ fun CoroutineScope.produceNumbers() = produce<Int> {
 fun CoroutineScope.square(numbers: ReceiveChannel<Int>): ReceiveChannel<Int> = produce {
     for (x in numbers) send(x * x)
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-04.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-04.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-04.kt).-->
+<!--{type="note"}-->
 
-<!--- TEST 
+<!--- TEST -->
+```text
 1
 4
 9
 16
 25
 Done!
--->
+```
+<!-- -->
 
+> コルーチンを生成する関数はすべて [CoroutineScope] の拡張として定義されています。
+> これにより、アプリケーションにグローバルなコルーチンが残らないことを確かなものとする
+> [構造化された並行性](composing-suspending-functions.md#async-における構造化された並行性)
+> を頼ることができます。
+>
+<!--
 > All functions that create coroutines are defined as extensions on [CoroutineScope],
 > so that we can rely on [structured concurrency](composing-suspending-functions.md#structured-concurrency-with-async) to make
 > sure that we don't have lingering global coroutines in our application.
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
 ## Prime numbers with pipeline
 
