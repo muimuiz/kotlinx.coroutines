@@ -1,6 +1,6 @@
 <!--- TEST_NAME ChannelsGuideTest -->
 
-# Channel
+# チャンネル
 <!--[//]: # (title: Channels)-->
 
 Deferred の値はコルーチンの間で単一の値を伝える便利な方法を提供します。
@@ -444,13 +444,14 @@ The output of this code is:
 
 <!--- TEST -->
 
-Note that you can build the same pipeline using 
+標準ライブラリにある
 [`iterator`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/iterator.html) 
-coroutine builder from the standard library. 
-Replace `produce` with `iterator`, `send` with `yield`, `receive` with `next`, 
-`ReceiveChannel` with `Iterator`, and get rid of the coroutine scope. You will not need `runBlocking` either.
-However, the benefit of a pipeline that uses channels as shown above is that it can actually use 
-multiple CPU cores if you run it in [Dispatchers.Default] context.
+コルーチン・ビルダーを用いても同じパイプラインを構築できることに注意しましょう。
+`produce` を `iterator` に、`send` を `yield` に、`receive` を `next` に、
+`ReceiveChannel` を `Iterator` に置き換え、コルーチン・スコープを取り除きます。
+`runBlocking` も必要ありません。
+しかし、上に示したチャンネルを用いたパイプラインの恩恵は、
+[Dispatchers.Default] コンテキストで走らせたなら実際には複数の CPU コアを用いることができることにあります。
 <!--
 Note that you can build the same pipeline using 
 [`iterator`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.sequences/iterator.html) 
@@ -461,10 +462,16 @@ However, the benefit of a pipeline that uses channels as shown above is that it 
 multiple CPU cores if you run it in [Dispatchers.Default] context.
 -->
 
+いずれにしても、これは素数を見つけるための極端に非実用的な方法です。
+実際には、パイプラインには（リモートサービスへの非同期呼び出しのような）他のサスペンド呼び出しがあり、
+完全に非同期的な `produce` とは違って、`sequence`/`iterator` は任意のサスペンドを許可しないので、
+そうしたパイプラインは `sequence`/`iterator` を使って構築することはできません。
+<!--
 Anyway, this is an extremely impractical way to find prime numbers. In practice, pipelines do involve some
 other suspending invocations (like asynchronous calls to remote services) and these pipelines cannot be
 built using `sequence`/`iterator`, because they do not allow arbitrary suspension, unlike
 `produce`, which is fully asynchronous.
+-->
  
 ## Fan-out
 
