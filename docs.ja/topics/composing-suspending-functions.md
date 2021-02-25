@@ -440,7 +440,7 @@ even though the operation that initiated it was aborted. This problem does not h
 concurrency, as shown in the section below.
 -->
 
-## async における構造化された並行性
+## async を使った構造化された並行性
 <!--## Structured concurrency with async-->
 
 [async を用いた並行処理](#async-を用いた並行処理) を例に取り、
