@@ -10,7 +10,7 @@ Deferred values provide a convenient way to transfer a single value between coro
 Channels provide a way to transfer a stream of values.
 -->
 
-## Channel の基本
+## チャンネルの基本
 <!--## Channel basics-->
 
 [Channel] は概念的には `BlockingQueue` ととてもよく似ています。
@@ -73,7 +73,7 @@ Done!
 
 <!--- TEST -->
 
-## Channel の終了と反復
+## チャンネルの終了と反復
 <!--## Closing and iteration over channels -->
 
 キュー (queue) とは異なり、チャンネルはそれ以上の要素が来ないことを示すためにクローズ (close) することができます。
@@ -138,12 +138,13 @@ Done!
 ```
 <!-- -->
 
-## Channel の生産者を作る
+## チャンネルのプロデューサーを作る
 <!--## Building channel producers-->
 
 コルーチンが一連の要素を生み出すこのパターンは極めて一般的なものです。
-これは、並行処理のコードでよく見られる部分的な __生産者-消費者__ (producer-consumer) パターンです。
-こうした生産者を、チャンネルをパラメーターとして取る関数として抽象化できるでしょう。
+これは、並行処理のコードでよく見られる
+__プロデューサー＝コンシューマー__（生産者＝消費者、producer-consumer）パターンの一部分です。
+こうしたプロデューサーを、チャンネルをパラメーターとして取る関数として抽象化できるでしょう。
 しかし、これは結果は関数から返されねばならないという常識には反することになります。
 <!--
 The pattern where a coroutine is producing a sequence of elements is quite common. 
@@ -152,8 +153,8 @@ You could abstract such a producer into a function that takes channel as its par
 to common sense that results must be returned from functions. 
 -->
 
-生産者側でこれを簡単に正しく行える [produce] という名の便利なコルーチン・ビルダーがあり、
-消費者側には `for` ループに置き換わる拡張関数 [consumeEach] があります。
+プロデューサー側でこれを簡単に正しく行える [produce] という名の便利なコルーチン・ビルダーがあり、
+コンシューマー側には `for` ループに置き換わる拡張関数 [consumeEach] があります。
 <!--
 There is a convenient coroutine builder named [produce] that makes it easy to do it right on producer side,
 and an extension function [consumeEach], that replaces a `for` loop on the consumer side:
@@ -225,7 +226,7 @@ fun CoroutineScope.produceNumbers() = produce<Int> {
 }
 -->
 
-別のひとつまたは複数のコルーチンがこのストリームを消費し、なにかの処理を行い、別の結果を生産します。
+別のひとつまたは複数のコルーチンがこのストリームを消費し (consume)、なにかの処理を行い、別の結果を生産します (produce)。
 以下の例では、数は単に平方されます。
 <!--
 And another coroutine or coroutines are consuming that stream, doing some processing, and producing some other results.
@@ -473,13 +474,27 @@ built using `sequence`/`iterator`, because they do not allow arbitrary suspensio
 `produce`, which is fully asynchronous.
 -->
  
-## Fan-out
+## ファンアウト
+<!--## Fan-out-->
 
+複数のコルーチンが同じチャンネルから受信して、それらで作業を分担するかもしれません。
+ここでは定期的に（1 秒に 10 個の）整数を生み出すプロデューサー（生産者）コルーチンから考えてみましょう。
+<!--
 Multiple coroutines may receive from the same channel, distributing work between themselves.
 Let us start with a producer coroutine that is periodically producing integers 
 (ten numbers per second):
+-->
 
 ```kotlin
+fun CoroutineScope.produceNumbers() = produce<Int> {
+    var x = 1 // 1 から始めます
+    while (true) {
+        send(x++) // 次を生み出します
+        delay(100) // 0.1 秒待ちます
+    }
+}
+```
+<!--kotlin
 fun CoroutineScope.produceNumbers() = produce<Int> {
     var x = 1 // start from 1
     while (true) {
@@ -487,10 +502,14 @@ fun CoroutineScope.produceNumbers() = produce<Int> {
         delay(100) // wait 0.1s
     }
 }
-```
+-->
 
+これから、いくつかのプロセッサー（加工用）コルーチンを作れます。
+ここでの例は、その id と受信した数を表示するだけとします。
+<!--
 Then we can have several processor coroutines. In this example, they just print their id and
 received number:
+-->
 
 ```kotlin
 fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel<Int>) = launch {
@@ -499,12 +518,29 @@ fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel<Int>) = laun
     }    
 }
 ```
+<!--kotlin
+fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel<Int>) = launch {
+    for (msg in channel) {
+        println("Processor #$id received $msg")
+    }    
+}
+-->
 
+では、5 つのプロセッサーを起動して、およそ 1 秒作業させてみましょう。
+どのようになるでしょうか。
+<!--
 Now let us launch five processors and let them work for almost a second. See what happens:
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+    val producer = produceNumbers()
+    repeat(5) { launchProcessor(it, producer) }
+    delay(950)
+    producer.cancel() // プロデューサー・コルーチンをキャンセルし、これによりすべて停止します
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
@@ -530,15 +566,19 @@ fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel<Int>) = laun
         println("Processor #$id received $msg")
     }    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-06.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-06.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-06.kt).-->
+<!--{type="note"}-->
 
+出力は以下のようなものとなるでしょう。ただし、それぞれ特定整数を受け取ったプロセッサー id は異なってきます。
+<!--
 The output will be similar to the the following one, albeit the processor ids that receive
 each specific integer may be different:
+-->
 
 ```text
 Processor #2 received 1
@@ -555,19 +595,37 @@ Processor #3 received 10
 
 <!--- TEST lines.size == 10 && lines.withIndex().all { (i, line) -> line.startsWith("Processor #") && line.endsWith(" received ${i + 1}") } -->
 
+プロデューサー・コルーチンをキャンセルすることでチャンネルが閉じるため、
+プロセッサー・コルーチンが作業しているチャンネルを通じた反復処理も最終的に終了することに注意しましょう。
+<!--
 Note that cancelling a producer coroutine closes its channel, thus eventually terminating iteration
 over the channel that processor coroutines are doing.
+-->
 
+また、`launchProcessor` コードのファンアウトを行うため、
+`for` ループを使ってどのようにチャンネルを明示的に反復処理しているかにも注意してください。
+`consumeEach` とは異なって、この `for` ループのパターンは複数のコルーチンから使用しても完全に安全です。
+もしこれらプロセッサー・コルーチンのひとつが失敗したとしても、他のものがチャンネルを処理し続けますが、
+`consumeEach` を使って書かれたプロセッサーは、正常終了時や異常終了時も、
+つねにその元となっているチャンネルを消費します（キャンセルします）。
+<!--
 Also, pay attention to how we explicitly iterate over channel with `for` loop to perform fan-out in `launchProcessor` code. 
 Unlike `consumeEach`, this `for` loop pattern is perfectly safe to use from multiple coroutines. If one of the processor 
 coroutines fails, then others would still be processing the channel, while a processor that is written via `consumeEach` 
 always consumes (cancels) the underlying channel on its normal or abnormal completion.     
+-->
 
-## Fan-in
+## ファンイン
+<!--## Fan-in-->
 
+複数のコルーチンが同じチャンネルに送信することもあります。
+例えば、文字列のチャンネルがあり、
+サスペンド関数 (suspending function) がこのチャンネルに指定された文字列を指定された遅延で繰り返し送信するとしましょう。
+<!--
 Multiple coroutines may send to the same channel.
 For example, let us have a channel of strings, and a suspending function that 
 repeatedly sends a specified string to this channel with a specified delay:
+-->
 
 ```kotlin
 suspend fun sendString(channel: SendChannel<String>, s: String, time: Long) {
@@ -577,13 +635,34 @@ suspend fun sendString(channel: SendChannel<String>, s: String, time: Long) {
     }
 }
 ```
+<!--kotlin
+suspend fun sendString(channel: SendChannel<String>, s: String, time: Long) {
+    while (true) {
+        delay(time)
+        channel.send(s)
+    }
+}
+-->
 
+ここで、文字列を送信する 2 つのコルーチンを起動したらどうなるか見てみましょう
+（この例では、メイン・スレッドのコンテキストでメイン・コルーチンの子としてこれらを起動します）。
+<!--
 Now, let us see what happens if we launch a couple of coroutines sending strings 
 (in this example we launch them in the context of the main thread as main coroutine's children):
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+    val channel = Channel<String>()
+    launch { sendString(channel, "foo", 200L) }
+    launch { sendString(channel, "BAR!", 500L) }
+    repeat(6) { // 最初の 6 つを受信します
+        println(channel.receive())
+    }
+    coroutineContext.cancelChildren() // メインを終了するためにすべての子をキャンセルします
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
@@ -605,14 +684,18 @@ suspend fun sendString(channel: SendChannel<String>, s: String, time: Long) {
         channel.send(s)
     }
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-07.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-07.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-07.kt).-->
+<!--{type="note"}-->
 
+この出力は以下です。
+<!--
 The output is:
+-->
 
 ```text
 foo
@@ -625,19 +708,47 @@ BAR!
 
 <!--- TEST -->
 
-## Buffered channels
+## バッファーされたチャンネル
+<!--## Buffered channels-->
 
+ここまでに見たチャンネルにはバッファー (buffer) がありませんでした。
+バッファーのないチャンネルは、送信側と受信側が出会った（ランデヴー \[rendezvous\] した）とき要素を伝送します。
+送信側がはじめに起動されたなら受信側が起動されるまで送信側はサスペンドし、
+受信側がはじめに起動されたときは送信側が起動されるまで受信側がサスペンドします。
+<!--
 The channels shown so far had no buffer. Unbuffered channels transfer elements when sender and receiver 
 meet each other (aka rendezvous). If send is invoked first, then it is suspended until receive is invoked, 
 if receive is invoked first, it is suspended until send is invoked.
+-->
 
+[Channel()] ファクトリー関数と [produce] ビルダーはどちらもオプションで
+__バッファー・サイズ__ を指定する `capacity`（容量）パラメーターを取ります。
+指定された容量を持ちバッファーがいっぱいとなるとブロッキングする `BlockingQueue` と同様に、
+バッファーはサスペンドするまでに送信側が複数の要素を送ることを許します。
+<!--
 Both [Channel()] factory function and [produce] builder take an optional `capacity` parameter to
 specify _buffer size_. Buffer allows senders to send multiple elements before suspending, 
 similar to the `BlockingQueue` with a specified capacity, which blocks when buffer is full.
+-->
 
+以下のコードをふるまいを見てみましょう。
+<!--
 Take a look at the behavior of the following code:
+-->
 
 ```kotlin
+    val channel = Channel<Int>(4) // バッファーのあるチャンネルを作成します
+    val sender = launch { // 送信側コルーチンを起動します
+        repeat(10) {
+            println("Sending $it") // 送信する前に各要素を表示します
+            channel.send(it) // バッファーがいっぱいとなるとサスペンドすることになります
+        }
+    }
+    // 何も受信していません…しばし待ちます…
+    delay(1000)
+    sender.cancel() // 送信側コルーチンをキャンセルします
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
@@ -655,14 +766,18 @@ fun main() = runBlocking<Unit> {
     sender.cancel() // cancel sender coroutine
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-08.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-08.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-08.kt).-->
+<!--{type="note"}-->
 
+これは、容量 __4__ のバッファー付きチャンネルを用い、__5__ 回の「送信」を表示します。
+<!--
 It prints "sending" _five_ times using a buffered channel with capacity of _four_:
+-->
 
 ```text
 Sending 0
@@ -674,7 +789,10 @@ Sending 4
 
 <!--- TEST -->
 
+最初の 4 つの要素はバッファーに追加され、5 つめの要素を送信しようとしたときに送信側がサスペンドします。
+<!--
 The first four elements are added to the buffer and the sender suspends when trying to send the fifth one.
+-->
 
 ## Channels are fair
 
