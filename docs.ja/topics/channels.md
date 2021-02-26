@@ -464,7 +464,7 @@ multiple CPU cores if you run it in [Dispatchers.Default] context.
 -->
 
 いずれにしても、これは素数を見つけるための極端に非実用的な方法です。
-実際には、パイプラインには（リモートサービスへの非同期呼び出しのような）他のサスペンド呼び出しがあり、
+実際には、パイプラインには（リモートサービスへの非同期呼び出しのような）他のサスペンド呼び出しがあります。
 完全に非同期的な `produce` とは違って、`sequence`/`iterator` は任意のサスペンドを許可しないので、
 そうしたパイプラインは `sequence`/`iterator` を使って構築することはできません。
 <!--
@@ -474,7 +474,7 @@ built using `sequence`/`iterator`, because they do not allow arbitrary suspensio
 `produce`, which is fully asynchronous.
 -->
  
-## ファンアウト
+## ファン＝アウト
 <!--## Fan-out-->
 
 複数のコルーチンが同じチャンネルから受信して、それらで作業を分担するかもしれません。
@@ -615,7 +615,7 @@ coroutines fails, then others would still be processing the channel, while a pro
 always consumes (cancels) the underlying channel on its normal or abnormal completion.     
 -->
 
-## ファンイン
+## ファン＝イン
 <!--## Fan-in-->
 
 複数のコルーチンが同じチャンネルに送信することもあります。
@@ -794,14 +794,45 @@ Sending 4
 The first four elements are added to the buffer and the sender suspends when trying to send the fifth one.
 -->
 
+## チャンネルは公平です
+<!--
 ## Channels are fair
+-->
 
+チャンネルの送信と受信操作は、複数のコルーチンからの起動に関して __公平__ です。
+チャンネルの送受信操作は、複数のコルーチンからの呼び出しの順序に関して __公平__ に行われます。
+これはファーストイン・ファーストアウト（先入れ先出し）の順序で扱われます。
+例えば、最初に `receive` を呼び出したコルーチンがその要素を取得します。
+以下の例では、2 つのコルーチン "ping" と "pong" が共有された "table" チャンネルから "ball" オブジェクトを受け取っています。
+<!--
 Send and receive operations to channels are _fair_ with respect to the order of their invocation from 
 multiple coroutines. They are served in first-in first-out order, e.g. the first coroutine to invoke `receive` 
 gets the element. In the following example two coroutines "ping" and "pong" are 
 receiving the "ball" object from the shared "table" channel. 
+-->
 
 ```kotlin
+data class Ball(var hits: Int)
+
+fun main() = runBlocking {
+    val table = Channel<Ball>() // 共有の table
+    launch { player("ping", table) }
+    launch { player("pong", table) }
+    table.send(Ball(0)) // ball をサーブします
+    delay(1000) // 1 秒遅延します 
+    coroutineContext.cancelChildren() // ゲーム・オーバー、キャンセルします
+}
+
+suspend fun player(name: String, table: Channel<Ball>) {
+    for (ball in table) { // ループ中で ball を受け取ります
+        ball.hits++
+        println("$name $ball")
+        delay(300) // 少し待ちます
+        table.send(ball) // ball を打ち返します
+    }
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
@@ -826,16 +857,22 @@ suspend fun player(name: String, table: Channel<Ball>) {
     }
 }
 //sampleEnd
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt) で入手できます。
 >
-{type="note"}
+<!-- --> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt).-->
+<!--{type="note"}-->
 
+"ping" コルーチンがまず開始するので、ボールを受ける最初のものになります。
+"ping" コルーチンがテーブルへボールを返した後で、直ちにボールの受け取りを再度始めても、
+"pong" コルーチンがすでにボールを待っているので、ボールは "pong" コルーチンにより受け取られることになります。
+<!--
 The "ping" coroutine is started first, so it is the first one to receive the ball. Even though "ping"
 coroutine immediately starts receiving the ball again after sending it back to the table, the ball gets
 received by the "pong" coroutine, because it was already waiting for it:
+-->
 
 ```text
 ping Ball(hits=1)
@@ -846,22 +883,71 @@ pong Ball(hits=4)
 
 <!--- TEST -->
 
+使用されている executor の性質により、
+ときにチャンネルが不公平に見える実行を生成することがあることに注意が必要です。
+詳細については [この問題](https://github.com/Kotlin/kotlinx.coroutines/issues/111) を参照してください。
+<!--
 Note that sometimes channels may produce executions that look unfair due to the nature of the executor
 that is being used. See [this issue](https://github.com/Kotlin/kotlinx.coroutines/issues/111) for details.
+-->
 
-## Ticker channels
+## ティッカー・チャンネル
+<!--## Ticker channels-->
 
+ティッカー・チャンネル (ticker channel) は、チャンネルからの最後のコンシューム（消費）以降、
+与えられた遅延時間ごとに `Unit` をプロデュース（生産）する特殊なランデヴー・チャンネルです
+（訳注：ticker の原義は時計のようにチクタクと刻むもの）。
+単体では役立たないように見えますが、時間を基本とする複雑な [produce] パイプラインやウィンドウ処理、
+その他、時間依存の処理を生成するために有用な構成要素です。
+ティッカー・チャンネルは、[select] で "on tick" アクションを実行するために使用することができます。
+<!--
 Ticker channel is a special rendezvous channel that produces `Unit` every time given delay passes since last consumption from this channel.
 Though it may seem to be useless standalone, it is a useful building block to create complex time-based [produce] 
 pipelines and operators that do windowing and other time-dependent processing.
 Ticker channel can be used in [select] to perform "on tick" action.
+-->
 
+こうしたチャンネルを生成するためには [ticker] ファクトリー・メソッドを使用し、
+これ以上の要素が必要ないときには [ReceiveChannel.cancel] メソッドを使用します。
+<!--
 To create such channel use a factory method [ticker]. 
 To indicate that no further elements are needed use [ReceiveChannel.cancel] method on it.
+-->
 
+では、どのようにこれが働くか見てみましょう。
+<!--
 Now let's see how it works in practice:
+-->
 
 ```kotlin
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+
+fun main() = runBlocking<Unit> {
+    val tickerChannel = ticker(delayMillis = 100, initialDelayMillis = 0) // ティッカー・チャンネルを生成します
+    var nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
+    println("Initial element is available immediately: $nextElement") // 初期の遅延はありません
+
+    nextElement = withTimeoutOrNull(50) { tickerChannel.receive() } // その後の要素はすべて 100 ms の遅延があります
+    println("Next element is not ready in 50 ms: $nextElement")
+
+    nextElement = withTimeoutOrNull(60) { tickerChannel.receive() }
+    println("Next element is ready in 100 ms: $nextElement")
+
+    // 大きな消費の遅延を模倣します
+    println("Consumer pauses for 150ms")
+    delay(150)
+    // その次の要素は直ちに利用可能です
+    nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
+    println("Next element is available immediately after large consumer delay: $nextElement")
+    // `receive` 呼び出し間の停止が考慮され、次の要素は早く到着することに注意してください
+    nextElement = withTimeoutOrNull(60) { tickerChannel.receive() } 
+    println("Next element is ready in 50ms after consumer pause in 150ms: $nextElement")
+
+    tickerChannel.cancel() // これ以上の要素が必要ないことを指示します
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
@@ -888,13 +974,17 @@ fun main() = runBlocking<Unit> {
 
     tickerChannel.cancel() // indicate that no more elements are needed
 }
-```
+-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-10.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-10.kt).-->
+<!--{type="note"}-->
 
+これは以下の行を表示します。
+<!--
 It prints following lines:
+-->
 
 ```text
 Initial element is available immediately: kotlin.Unit
@@ -907,11 +997,20 @@ Next element is ready in 50ms after consumer pause in 150ms: kotlin.Unit
 
 <!--- TEST -->
 
+デフォルトでは、[ticker] はコンシューマーが一時停止する可能性に気を配り、
+一時停止があれば次にプロデュースする要素の遅延を調整し、
+プロデュースする要素が一定の速さを維持しようとすることに注意してください。
+<!--
 Note that [ticker] is aware of possible consumer pauses and, by default, adjusts next produced element 
 delay if a pause occurs, trying to maintain a fixed rate of produced elements.
+-->
  
+オプションとして、`mode` パラメーターを [TickerMode.FIXED_DELAY] に等しくすれば、
+要素間に固定された遅延を維持するよう指定できます。
+<!--
 Optionally, a `mode` parameter equal to [TickerMode.FIXED_DELAY] can be specified to maintain a fixed
 delay between elements.
+--> 
 
 <!--- MODULE kotlinx-coroutines-core -->
 <!--- INDEX kotlinx.coroutines -->
