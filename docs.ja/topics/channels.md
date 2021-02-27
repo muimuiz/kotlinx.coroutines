@@ -143,7 +143,7 @@ Done!
 
 コルーチンが一連の要素を生み出すこのパターンは極めて一般的なものです。
 これは、並行処理のコードでよく見られる
-__プロデューサー＝コンシューマー__（生産者＝消費者、producer-consumer）パターンの一部分です。
+__プロデューサー＝コンシューマー__ （生産者＝消費者、producer-consumer）パターンの一部分です。
 こうしたプロデューサーを、チャンネルをパラメーターとして取る関数として抽象化できるでしょう。
 しかし、これは結果は関数から返されねばならないという常識には反することになります。
 <!--
@@ -161,15 +161,9 @@ and an extension function [consumeEach], that replaces a `for` loop on the consu
 -->
 
 ```kotlin
-fun CoroutineScope.produceSquares(): ReceiveChannel<Int> = produce {
-    for (x in 1..5) send(x * x)
-}
-
-fun main() = runBlocking {
     val squares = produceSquares()
     squares.consumeEach { println(it) }
     println("Done!")
-}
 ```
 <!--kotlin
 import kotlinx.coroutines.*
