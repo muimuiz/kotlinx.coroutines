@@ -224,12 +224,38 @@ CoroutineExceptionHandler got java.lang.AssertionError
 ## キャンセルと例外
 <!--## Cancellation and exceptions-->
 
+キャンセルは例外と密接に関係しています。
+コルーチンはキャンセルのために内部的に `CancellationException` を用いますが、
+この例外はすべてのハンドラによって無視されます。
+よってこれらは、`catch` ブロックにより得られる追加のデバッグ情報源としてのみ用いられるべきです。
+[Job.cancel] を用いてコルーチンがキャンセルされたときには、
+コルーチンは終了しますがその親はキャンセルされません。
+<!--
 Cancellation is closely related to exceptions. Coroutines internally use `CancellationException` for cancellation, these
 exceptions are ignored by all handlers, so they should be used only as the source of additional debug information, which can
 be obtained by `catch` block.
 When a coroutine is cancelled using [Job.cancel], it terminates, but it does not cancel its parent.
+-->
 
 ```kotlin
+    val job = launch {
+        val child = launch {
+            try {
+                delay(Long.MAX_VALUE)
+            } finally {
+                println("Child is cancelled")
+            }
+        }
+        yield()
+        println("Cancelling child")
+        child.cancel()
+        child.join()
+        yield()
+        println("Parent is not cancelled")
+    }
+    job.join()
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
@@ -252,14 +278,18 @@ fun main() = runBlocking {
     job.join()
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-exceptions-03.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-03.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-exceptions-03.kt).-->
+<!--{type="note"}-->
 
+この出力は次のようになります。
+<!--
 The output of this code is:
+-->
 
 ```text
 Cancelling child
@@ -269,22 +299,64 @@ Parent is not cancelled
 
 <!--- TEST-->
 
+コルーチンが `CancellationException` 以外の例外に出会うと、その例外でその親がキャンセルされます。
+このふるまいは上書きできず、
+[構造化された並行性](composing-suspending-functions.md#aync-を使った構造化された並行性) のための
+安定したコルーチンの階層を与えるために用いられています。
+[CoroutineExceptionHandler] の実装は子のコルーチンでは用いられていません。
+<!--
 If a coroutine encounters an exception other than `CancellationException`, it cancels its parent with that exception. 
 This behaviour cannot be overridden and is used to provide stable coroutines hierarchies for
 [structured concurrency](https://github.com/Kotlin/kotlinx.coroutines/blob/master/docs/composing-suspending-functions.md#structured-concurrency-with-async).
 [CoroutineExceptionHandler] implementation is not used for child coroutines.
+-->
 
+> これらの例において [CoroutineExceptionHandler] は、[GlobalScope] で作成されたコルーチンに常に備えられています。
+> メインの [runBlocking] のスコープで起動されたコルーチンは、子のコルーチンが例外で終了すると
+> 設定されている例外ハンドラーに関わらず常にキャンセルされることになるため、
+> メインのコルーチンに例外ハンドラを設定することは意味がありません。
+>
+<!--
 > In these examples, [CoroutineExceptionHandler] is always installed to a coroutine
 > that is created in [GlobalScope]. It does not make sense to install an exception handler to a coroutine that
 > is launched in the scope of the main [runBlocking], since the main coroutine is going to be always cancelled
 > when its child completes with exception despite the installed handler.
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
+すべての子のコルーチンが終了したとき、もともとの例外は親のコルーチンでのみ扱われます。
+このことは以下の例で示されています。
+<!--
 The original exception is handled by the parent only when all its children terminate,
 which is demonstrated by the following example.
+-->
 
 ```kotlin
+    val handler = CoroutineExceptionHandler { _, exception -> 
+        println("CoroutineExceptionHandler got $exception") 
+    }
+    val job = GlobalScope.launch(handler) {
+        launch { // 1 番目の子
+            try {
+                delay(Long.MAX_VALUE)
+            } finally {
+                withContext(NonCancellable) {
+                    println("Children are cancelled, but exception is not handled until all children terminate")
+                    delay(100)
+                    println("The first child finished its non cancellable block")
+                }
+            }
+        }
+        launch { // 2 番目の子
+            delay(10)
+            println("Second child throws an exception")
+            throw ArithmeticException()
+        }
+    }
+    job.join()
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
@@ -313,14 +385,18 @@ fun main() = runBlocking {
     job.join()
 //sampleEnd 
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-exceptions-04.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-04.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-exceptions-04.kt).-->
+<!--{type="note"}-->
 
+このコードの出力は以下のようです。
+<!--
 The output of this code is:
+-->
 
 ```text
 Second child throws an exception
@@ -331,17 +407,47 @@ CoroutineExceptionHandler got java.lang.ArithmeticException
 
 <!--- TEST-->
 
-## Exceptions aggregation
+## 複数の例外の集約
+<!--## Exceptions aggregation-->
 
+あるコルーチンの複数の子が例外を出した場合の一般規則は「一番乗りの例外が勝つ」であり、最初の例外が処理されることになります。
+最初のもの以降に起きた追加の例外は、抑制された (suppressed) 例外として最初の例外に付加されます。
+<!--
 When multiple children of a coroutine fail with an exception, the
 general rule is "the first exception wins", so the first exception gets handled.
 All additional exceptions that happen after the first one are attached to the first exception as suppressed ones. 
+-->
 
 <!--- INCLUDE
 import kotlinx.coroutines.exceptions.*
 -->
 
 ```kotlin
+import kotlinx.coroutines.*
+import java.io.*
+
+fun main() = runBlocking {
+    val handler = CoroutineExceptionHandler { _, exception ->
+        println("CoroutineExceptionHandler got $exception with suppressed ${exception.suppressed.contentToString()}")
+    }
+    val job = GlobalScope.launch(handler) {
+        launch {
+            try {
+                delay(Long.MAX_VALUE) // 他の兄弟コルーチンが IOException を出したときにキャンセルされます
+            } finally {
+                throw ArithmeticException() // 2 番目の例外
+            }
+        }
+        launch {
+            delay(100)
+            throw IOException() // 最初の例外
+        }
+        delay(Long.MAX_VALUE)
+    }
+    job.join()  
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import java.io.*
 
@@ -365,18 +471,26 @@ fun main() = runBlocking {
     }
     job.join()  
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-exceptions-05.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-05.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-exceptions-05.kt).-->
+<!--{type="note"}-->
 
+> 注意：上のコードは `suppressed` 例外をサポートしている JDK7 以降でのみ適切に動作します。
+>
+<!--
 > Note: This above code will work properly only on JDK7+ that supports `suppressed` exceptions
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
+このコードの出力は以下のようです。
+<!--
 The output of this code is:
+-->
 
 ```text
 CoroutineExceptionHandler got java.io.IOException with suppressed [java.lang.ArithmeticException]
@@ -384,14 +498,43 @@ CoroutineExceptionHandler got java.io.IOException with suppressed [java.lang.Ari
 
 <!--- TEST-->
 
+> この仕組は現在のところ Java のバージョン 1.7 以降でのみ動作します。
+> JS および Native の制限は一時的なものであり、将来的には解消されます。
+>
+<!--
 > Note that this mechanism currently only works on Java version 1.7+. 
 > The JS and Native restrictions are temporary and will be lifted in the future.
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
+デフォルトではキャンセルの例外は透過的 (transparent) で剥き出し (unwrapped) になっています。
+<!--
 Cancellation exceptions are transparent and are unwrapped by default:
+-->
 
 ```kotlin
+    val handler = CoroutineExceptionHandler { _, exception ->
+        println("CoroutineExceptionHandler got $exception")
+    }
+    val job = GlobalScope.launch(handler) {
+        val inner = launch { // コルーチンの階層はすべてキャンセルされることになります
+            launch {
+                launch {
+                    throw IOException() // もともとの例外
+                }
+            }
+        }
+        try {
+            inner.join()
+        } catch (e: CancellationException) {
+            println("Rethrowing CancellationException with original cause")
+            throw e // キャンセルの例外は再送出されますが、元の IOException がハンドラーに達します
+        }
+    }
+    job.join()
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import java.io.*
 
@@ -418,14 +561,18 @@ fun main() = runBlocking {
     job.join()
 //sampleEnd    
 }
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-exceptions-06.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-exceptions-06.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-exceptions-06.kt).-->
+<!--{type="note"}-->
 
+このコードの出力は以下のようです。
+<!--
 The output of this code is:
+-->
 
 ```text
 Rethrowing CancellationException with original cause
