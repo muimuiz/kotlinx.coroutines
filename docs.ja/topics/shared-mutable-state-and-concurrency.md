@@ -5,7 +5,7 @@
 
 [Dispatchers.Default] のような複数スレッド（マルチスレッド）を用いるディスパッチャーを用いてコルーチンは並行的に実行でき、
 通常の並行処理の問題すべてが引き起こされます。
-主たる問題は、**共有された変更可能な（ミュータブルな）状態** (shared mutable state) へのアクセスの同期化です。。
+主たる問題は、**共有された変更可能（ミュータブル）な状態** (shared mutable state) へのアクセスの同期化です。。
 コルーチンの世界におけるこの問題への解決策のいくつかは複数スレッドの世界での解決策と同様ですが、ユニークなものもあります。
 <!--
 Coroutines can be executed concurrently using a multi-threaded dispatcher like the [Dispatchers.Default]. It presents
