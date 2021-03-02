@@ -378,30 +378,55 @@ The locking in this example is fine-grained, so it pays the price. However, it i
 where you absolutely must modify some shared state periodically, but there is no natural thread that this state
 is confined to.
 
-## Actors
+## アクター
 
+[アクター](https://en.wikipedia.org/wiki/Actor_model) (actor) は、
+コルーチンと、そのコルーチンに制約され閉じ込められた状態と、
+他のコルーチンと通信するためのチャンネルとを組み合わせて構成された実体です。
+単純なアクターは関数として書くことができますが、複雑な状態を持つアクターはクラスが適しています。
+<!--
 An [actor](https://en.wikipedia.org/wiki/Actor_model) is an entity made up of a combination of a coroutine,
 the state that is confined and encapsulated into this coroutine,
 and a channel to communicate with other coroutines. A simple actor can be written as a function, 
 but an actor with a complex state is better suited for a class. 
+-->
 
+簡便のために、やってくるメッセージを受信するためにアクターのメールボックス・チャンネルをそのスコープへと、
+また送信チャネルを返されるジョブ・オブジェクトへと結びつける [actor] コルーチン・ビルダーがあり、
+これにより、アクターへの単一の参照をそのハンドルとして持ち運ぶことができます。
+<!--
 There is an [actor] coroutine builder that conveniently combines actor's mailbox channel into its 
 scope to receive messages from and combines the send channel into the resulting job object, so that a 
 single reference to the actor can be carried around as its handle.
+-->
 
+アクターを使う第一歩は、アクターが処理しようとしているメッセージのクラスを定義することです。
+この目的には、Kotlin の [sealed classes](https://kotlinlang.org/docs/reference/sealed-classes.html) が適しています。
+ここでは、カウンターをインクリメントするための `IncCounter` メッセージと、
+値を得るための `GetCounter` メッセージを持った `CounterMsg` sealed class を定義しましょう。
+後者はレスポンスを送り返す必要があります。
+ここではこのために後で知る（通信する）こととなる単一の値を表現した [CompletableDeferred] 通信プリミティブを用いましょう。
+<!--
 The first step of using an actor is to define a class of messages that an actor is going to process.
 Kotlin's [sealed classes](https://kotlinlang.org/docs/reference/sealed-classes.html) are well suited for that purpose.
 We define `CounterMsg` sealed class with `IncCounter` message to increment a counter and `GetCounter` message
 to get its value. The later needs to send a response. A [CompletableDeferred] communication
 primitive, that represents a single value that will be known (communicated) in the future,
 is used here for that purpose.
+-->
 
 ```kotlin
+// counterActor のためのメッセージ型
+sealed class CounterMsg
+object IncCounter : CounterMsg() // インクリメント・カウンターへの一方向のメッセージ
+class GetCounter(val response: CompletableDeferred<Int>) : CounterMsg() // 返信をもつリクエスト
+```
+<!--kotlin
 // Message types for counterActor
 sealed class CounterMsg
 object IncCounter : CounterMsg() // one-way message to increment counter
 class GetCounter(val response: CompletableDeferred<Int>) : CounterMsg() // a request with reply
-```
+-->
 
 Then we define a function that launches an actor using an [actor] coroutine builder:
 
