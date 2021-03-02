@@ -428,9 +428,24 @@ object IncCounter : CounterMsg() // one-way message to increment counter
 class GetCounter(val response: CompletableDeferred<Int>) : CounterMsg() // a request with reply
 -->
 
+次に、[actor] コルチーン・ビルダーを用い、アクターを起動する関数を定義します。
+<!--
 Then we define a function that launches an actor using an [actor] coroutine builder:
+-->
 
 ```kotlin
+// この関数は新しいアクターを起動します
+fun CoroutineScope.counterActor() = actor<CounterMsg> {
+    var counter = 0 // アクターの状態
+    for (msg in channel) { // やってくるメッセージに渡って繰り返します
+        when (msg) {
+            is IncCounter -> counter++
+            is GetCounter -> msg.response.complete(counter)
+        }
+    }
+}
+```
+<!--kotlin
 // This function launches a new counter actor
 fun CoroutineScope.counterActor() = actor<CounterMsg> {
     var counter = 0 // actor state
@@ -441,13 +456,31 @@ fun CoroutineScope.counterActor() = actor<CounterMsg> {
         }
     }
 }
-```
+-->
 
+メインのコードは簡単です。
+<!--
 The main code is straightforward:
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+fun main() = runBlocking<Unit> {
+    val counter = counterActor() // アクターを生成します
+    withContext(Dispatchers.Default) {
+        massiveRun {
+            counter.send(IncCounter)
+        }
+    }
+    // アクターからカウンターの値を得るためのメッセージを送ります
+    val response = CompletableDeferred<Int>()
+    counter.send(GetCounter(response))
+    println("Counter = ${response.await()}")
+    counter.close() // アクターを終了します
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlin.system.*
@@ -498,31 +531,49 @@ fun main() = runBlocking<Unit> {
     counter.close() // shutdown the actor
 }
 //sampleEnd    
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-07.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-07.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-07.kt).-->
+<!--{type="note"}-->
 
 <!--- TEST ARBITRARY_TIME
 Completed 100000 actions in xxx ms
 Counter = 100000
 -->
 
+アクターそれ自体が実行されるコンテキストは（正確性において）問題ではありません。
+アクターはコルーチンであり、ひとつのコルーチンは逐次的に実行されるので、
+状態を特定のコルーチンへと制限することが共有された変更可能な状態の問題への解決となります。
+実際、アクターはそれ自体のプライベートな状態を変更できますが、
+互いにはメッセージを介してしか影響しあえません（どんなロックの必要もありません）。
+<!--
 It does not matter (for correctness) what context the actor itself is executed in. An actor is
 a coroutine and a coroutine is executed sequentially, so confinement of the state to the specific coroutine
 works as a solution to the problem of shared mutable state. Indeed, actors may modify their own private state, 
 but can only affect each other through messages (avoiding the need for any locks).
+-->
 
+アクターは、負荷が大きなときのロックよりも効率的です。
+そうした場合、常になすべき作業を行っており、別のコンテキストへと切り替える必要がまったくないからです。
+<!--
 Actor is more efficient than locking under load, because in this case it always has work to do and it does not 
 have to switch to a different context at all.
+-->
 
+> [actor] コルーチン・ビルダーは [produce] コルーチン・ビルダーと対となっていることに注意しましょう。
+> アクターはメッセージを受信するチャンネルと関連付けられており、
+> プロデューサーは要素を送信するチャンネルと関連付けられています。
+>
+<!--
 > Note that an [actor] coroutine builder is a dual of [produce] coroutine builder. An actor is associated 
 > with the channel that it receives messages from, while a producer is associated with the channel that it 
 > sends elements to.
 >
-{type="note"}
+-->
+<!--{type="note"}-->
 
 <!--- MODULE kotlinx-coroutines-core -->
 <!--- INDEX kotlinx.coroutines -->
