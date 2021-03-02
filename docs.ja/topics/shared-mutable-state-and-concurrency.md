@@ -292,7 +292,7 @@ standard data structures and basic operations on them. However, it does not easi
 state or to complex operations that do not have ready-to-use thread-safe implementations. 
 -->
 
-## 密結合スレッド限定
+## 細粒度スレッド限定
 <!--## Thread confinement fine-grained-->
 
 __スレッド限定__ (thread confinement) は、
@@ -374,7 +374,7 @@ Completed 100000 actions in xxx ms
 Counter = 100000
 -->
 
-__密結合__ (fine-grained) なスレッド限定を行うためにこのコードの動作は非常に遅いものです。
+__細粒度__（fine-grained、小さなループなど）のスレッド限定を行うため、このコードの動作は非常に遅いものです。
 各々の独立したインクリメントが、複数スレッドの [Dispatchers.Default] コンテキストを
 [withContext(counterContext)][withContext] を用いた単一スレッドのコンテキストへと切り替えています。
 <!--
@@ -383,16 +383,35 @@ from multi-threaded [Dispatchers.Default] context to the single-threaded context
 [withContext(counterContext)][withContext] block.
 -->
 
-## 疎結合なスレッド限定
+## 疎粒度なスレッド限定
 <!--## Thread confinement coarse-grained-->
 
+実用上、スレッド限定は、例えば状態更新のあるビジネス・ロジックの大きな断片のような大きなかたまりで行われます。
+以下の例では、このようにしています。
+はじめに各コルーチンは単一スレッドのコンテキストで実行されます。
+<!--
 In practice, thread confinement is performed in large chunks, e.g. big pieces of state-updating business logic
 are confined to the single thread. The following example does it like that, running each coroutine in 
 the single-threaded context to start with.
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+val counterContext = newSingleThreadContext("CounterContext")
+var counter = 0
+
+fun main() = runBlocking {
+    // すべてを単一スレッドのコンテキストへ限定します
+    withContext(counterContext) {
+        massiveRun {
+            counter++
+        }
+    }
+    println("Counter = $counter")
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlin.system.*
 
@@ -425,33 +444,69 @@ fun main() = runBlocking {
     println("Counter = $counter")
 }
 //sampleEnd     
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-05.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-05.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-05.kt).-->
+<!--{type="note"}-->
 
 <!--- TEST ARBITRARY_TIME
 Completed 100000 actions in xxx ms
 Counter = 100000
 -->
 
+今度はずっと高速に動作し、正しい結果を与えます。
+<!--
 This now works much faster and produces correct result.
+-->
 
-## Mutual exclusion
+## 排他制御
+<!--## Mutual exclusion-->
 
+排他制御 (mutual exclusion) による問題の解決は、
+並行しては決して実行されない __クリティカル・セクション__（critical section、危険領域）で
+共有状態のすべての変更を保護するというものです。
+このために、ブロッキングの世界で典型的には `synchronized` や `ReentrantLock` を使うことになるでしょう。
+コルーチンにおける代替は [Mutex] と呼ばれます。
+コルーチンには、クリティカル・セクションを区切るための
+[lock][Mutex.lock] と [unlock][Mutex.unlock] 関数があります。
+重要な違いは `Mutex.lock()` がサスペンド関数であることです。
+これはスレッドをブロッキングしません。
+<!--
 Mutual exclusion solution to the problem is to protect all modifications of the shared state with a _critical section_
 that is never executed concurrently. In a blocking world you'd typically use `synchronized` or `ReentrantLock` for that.
 Coroutine's alternative is called [Mutex]. It has [lock][Mutex.lock] and [unlock][Mutex.unlock] functions to 
 delimit a critical section. The key difference is that `Mutex.lock()` is a suspending function. It does not block a thread.
+-->
 
+また便利なよう `mutex.lock(); try { ... } finally { mutex.unlock() }` のパターンを表す
+[withLock] 拡張関数もあります。
+<!--
 There is also [withLock] extension function that conveniently represents 
 `mutex.lock(); try { ... } finally { mutex.unlock() }` pattern:
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+val mutex = Mutex()
+var counter = 0
+
+fun main() = runBlocking {
+    withContext(Dispatchers.Default) {
+        massiveRun {
+            // ロックにより各インクリメントを保護します
+            mutex.withLock {
+                counter++
+            }
+        }
+    }
+    println("Counter = $counter")
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.*
 import kotlin.system.*
@@ -487,21 +542,27 @@ fun main() = runBlocking {
     println("Counter = $counter")
 }
 //sampleEnd    
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-06.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-06.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-06.kt).-->
+<!--{type="note"}-->
 
 <!--- TEST ARBITRARY_TIME
 Completed 100000 actions in xxx ms
 Counter = 100000
 -->
 
+この例におけるロックは細粒度のため、コストが掛かります。
+しかし、共有された状態を周期的に必ず変更しなければならないものの、
+この状態が制限されているような自然なスレッドが存在しないというような状況ではよい選択です。
+<!--
 The locking in this example is fine-grained, so it pays the price. However, it is a good choice for some situations
 where you absolutely must modify some shared state periodically, but there is no natural thread that this state
 is confined to.
+-->
 
 ## アクター
 
@@ -516,7 +577,7 @@ and a channel to communicate with other coroutines. A simple actor can be writte
 but an actor with a complex state is better suited for a class. 
 -->
 
-簡便のために、やってくるメッセージを受信するためにアクターのメールボックス・チャンネルをそのスコープへと、
+簡単に済むよう、やってくるメッセージを受信するためにアクターのメールボックス・チャンネルをそのスコープへと、
 また送信チャネルを返されるジョブ・オブジェクトへと結びつける [actor] コルーチン・ビルダーがあり、
 これにより、アクターへの単一の参照をそのハンドルとして持ち運ぶことができます。
 <!--
