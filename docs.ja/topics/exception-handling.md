@@ -159,8 +159,8 @@ In addition to that, [async] builder always catches all exceptions and represent
 so its `CoroutineExceptionHandler` has no effect either.
 -->
 
-> スーパーヴィジョン・スコープ (supervision scope) で動作しているコルーチンは例外を親へと伝播させず、このルールから除外されます。
-> 詳しいことは、このドキュメントの [Supervision](#supervision) の節で説明されています。
+> スーパービジョン・スコープ (supervision scope) で動作しているコルーチンは例外を親へと伝播させず、このルールから除外されます。
+> 詳しいことは、このドキュメントの [スーパービジョン](#スーパービジョン) の節で説明されています。
 >
 <!--
 > Coroutines running in supervision scope do not propagate exceptions to their parent and are
@@ -498,7 +498,7 @@ CoroutineExceptionHandler got java.io.IOException with suppressed [java.lang.Ari
 
 <!--- TEST-->
 
-> この仕組は現在のところ Java のバージョン 1.7 以降でのみ動作します。
+> この仕組みは現在のところ Java のバージョン 1.7 以降でのみ動作します。
 > JS および Native の制限は一時的なものであり、将来的には解消されます。
 >
 <!--
@@ -581,25 +581,78 @@ CoroutineExceptionHandler got java.io.IOException
 
 <!--- TEST-->
 
-## Supervision
+## スーパービジョン
+<!--## Supervision-->
 
+上で見たように、キャンセルはコルーチンの階層全体に渡って伝播する双方向の関係を持ちます。
+一方向のみのキャンセルが必要とされる場合について見てみましょう。
+<!--
 As we have studied before, cancellation is a bidirectional relationship propagating through the whole
 hierarchy of coroutines. Let us take a look at the case when unidirectional cancellation is required. 
+-->
 
+こうした必要性のいい例として、そのスコープでジョブが定められた UI コンポーネントがあります。
+UI の子の作業のどれかが失敗したとしても、
+常に UI コンポーネント全体をキャンセル（実質的な強制終了）させなければならないような必要はありませんが、
+UI コンポーネントが破壊され（よって、そのジョブがキャンセルされ）た場合は、
+すべての子のジョブの結果は必要なくなるため失敗させる必要があります。
+<!--
 A good example of such a requirement is a UI component with the job defined in its scope. If any of the UI's child tasks
 have failed, it is not always necessary to cancel (effectively kill) the whole UI component,
 but if UI component is destroyed (and its job is cancelled), then it is necessary to fail all child jobs as their results are no longer needed.
+-->
 
+別の例は、複数の子のジョブを起動し、それらの実行を __スーバーバイズ__（監視、supervise）して、
+失敗を追跡し、失敗したものを再度開始する必要があるサーバー・プロセスです。
+<!--
 Another example is a server process that spawns multiple child jobs and needs to _supervise_
 their execution, tracking their failures and only restarting the failed ones.
+-->
 
-### Supervision job
+### スーバービジョン・ジョブ
+<!--### Supervision job-->
 
+これらの目的のためには、[SupervisorJob][SupervisorJob()] を用いることができます。
+通常の [Job][Job()] と似ていますが、唯一の違いはキャンセルが下向きにのみ伝播するということです。
+このことは、以下の例を用いて容易に示されます。
+<!--
 The [SupervisorJob][SupervisorJob()] can be used for these purposes. 
 It is similar to a regular [Job][Job()] with the only exception that cancellation is propagated
 only downwards. This can easily be demonstrated using the following example:
+-->
 
 ```kotlin
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
+    val supervisor = SupervisorJob()
+    with(CoroutineScope(coroutineContext + supervisor)) {
+        // 1 番目の子を起動します -- この例では例外は無視されています（運用でやってはいけません！）
+        val firstChild = launch(CoroutineExceptionHandler { _, _ ->  }) {
+            println("The first child is failing")
+            throw AssertionError("The first child is cancelled")
+        }
+        // 2 番目の子を起動します
+        val secondChild = launch {
+            firstChild.join()
+            // 1 番目の子のキャンセルは 2 番目の子に伝播しません
+            println("The first child is cancelled: ${firstChild.isCancelled}, but the second one is still active")
+            try {
+                delay(Long.MAX_VALUE)
+            } finally {
+                // しかし、スーパーバイザーのキャンセルは伝播します
+                println("The second child is cancelled because the supervisor was cancelled")
+            }
+        }
+        // 1 番目の子が失敗するまで待機してから完了します
+        firstChild.join()
+        println("Cancelling the supervisor")
+        supervisor.cancel()
+        secondChild.join()
+    }
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 
 fun main() = runBlocking {
@@ -629,13 +682,17 @@ fun main() = runBlocking {
         secondChild.join()
     }
 }
-```
+-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-supervision-01.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-01.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-supervision-01.kt).-->
+<!--{type="note"}-->
 
+このコードの出力は以下になります。
+<!--
 The output of this code is:
+-->
 
 ```text
 The first child is failing
@@ -646,13 +703,45 @@ The second child is cancelled because the supervisor was cancelled
 
 <!--- TEST-->
 
-### Supervision scope
+### スーパービジョン・スコープ
+<!--### Supervision scope-->
 
+[coroutineScope][_coroutineScope] の代わりとして
+__スコープされた__ (scoped) 並行性のために [supervisorScope][_supervisorScope] を用いることができます。
+これは、キャンセルを一方向にのみ伝播させ、それ自体が失敗したときのみすべての子がキャンセルされます。
+またこれは、[coroutineScope][_coroutineScope] と同様に完了の前にすべての子（の完了）を待機します。
+<!--
 Instead of [coroutineScope][_coroutineScope], we can use [supervisorScope][_supervisorScope] for _scoped_ concurrency. It propagates the cancellation
 in one direction only and cancels all its children only if it failed itself. It also waits for all children before completion
 just like [coroutineScope][_coroutineScope] does.
+-->
 
 ```kotlin
+import kotlin.coroutines.*
+import kotlinx.coroutines.*
+
+fun main() = runBlocking {
+    try {
+        supervisorScope {
+            val child = launch {
+                try {
+                    println("The child is sleeping")
+                    delay(Long.MAX_VALUE)
+                } finally {
+                    println("The child is cancelled")
+                }
+            }
+            // yield を用いて子に実行と表示の機会を与えます
+            yield()
+            println("Throwing an exception from the scope")
+            throw AssertionError()
+        }
+    } catch(e: AssertionError) {
+        println("Caught an assertion error")
+    }
+}
+```
+<!--kotlin
 import kotlin.coroutines.*
 import kotlinx.coroutines.*
 
@@ -676,13 +765,17 @@ fun main() = runBlocking {
         println("Caught an assertion error")
     }
 }
-```
+-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-supervision-02.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-02.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-supervision-02.kt).-->
+<!--{type="note"}-->
 
+このコードの出力は以下のようです。
+<!--
 The output of this code is:
+-->
 
 ```text
 The child is sleeping
@@ -693,14 +786,24 @@ Caught an assertion error
 
 <!--- TEST-->
 
-#### Exceptions in supervised coroutines
+#### スーパーバイズされたコルーチンにおける例外
+<!--#### Exceptions in supervised coroutines-->
 
+通常のジョブとスーパーバイザーのジョブの別の重要な違いは例外処理です。
+すべての子は、例外処理の機構を介して自分自身で例外を処理しなければなりません。
+この違いは、子の失敗が親に伝播しないということによります。
+これは、[supervisorScope][_supervisorScope] の内部で直接に起動されたコルーチンは、
+ルートのコルーチンが行っていることと同様に、
+それらのスコープに設定されている [CoroutineExceptionHandler] を __用いる__ ということを意味しています
+（詳細は [CoroutineExceptionHandler](#coroutineexceptionhandler) の節を参照してください）。
+<!--
 Another crucial difference between regular and supervisor jobs is exception handling.
 Every child should handle its exceptions by itself via the exception handling mechanism.
 This difference comes from the fact that child's failure does not propagate to the parent.
 It means that coroutines launched directly inside the [supervisorScope][_supervisorScope] _do_ use the [CoroutineExceptionHandler]
 that is installed in their scope in the same way as root coroutines do
 (see the [CoroutineExceptionHandler](#coroutineexceptionhandler) section for details). 
+-->
 
 ```kotlin
 import kotlin.coroutines.*
@@ -720,12 +823,34 @@ fun main() = runBlocking {
     println("The scope is completed")
 }
 ```
+<!--kotlin
+import kotlin.coroutines.*
+import kotlinx.coroutines.*
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-supervision-03.kt).
+fun main() = runBlocking {
+    val handler = CoroutineExceptionHandler { _, exception -> 
+        println("CoroutineExceptionHandler got $exception") 
+    }
+    supervisorScope {
+        val child = launch(handler) {
+            println("The child throws an exception")
+            throw AssertionError()
+        }
+        println("The scope is completing")
+    }
+    println("The scope is completed")
+}
+-->
+
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-supervision-03.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-supervision-03.kt).-->
+<!--{type="note"}-->
 
+このコードの出力は以下のようです。
+<!--
 The output of this code is:
+-->
 
 ```text
 The scope is completing
