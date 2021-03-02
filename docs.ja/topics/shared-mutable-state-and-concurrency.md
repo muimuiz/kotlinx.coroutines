@@ -17,10 +17,30 @@ but others are unique.
 ## 問題
 <!--## The problem-->
 
+100 個のコルーチンを起動し全部が同じ作業を 1000 回行ってみましょう。
+さらに、後で比較するために完了までの時間も測定します。
+<!--
 Let us launch a hundred coroutines all doing the same action thousand times. 
 We'll also measure their completion time for further comparisons:
+-->
 
 ```kotlin
+suspend fun massiveRun(action: suspend () -> Unit) {
+    val n = 100  // 起動するコルーチンの数
+    val k = 1000 // 各コルーチンで繰り返す作業の数
+    val time = measureTimeMillis {
+        coroutineScope { // コルーチンのためのスコープ 
+            repeat(n) {
+                launch {
+                    repeat(k) { action() }
+                }
+            }
+        }
+    }
+    println("Completed ${n * k} actions in $time ms")    
+}
+```
+<!--kotlin
 suspend fun massiveRun(action: suspend () -> Unit) {
     val n = 100  // number of coroutines to launch
     val k = 1000 // times an action is repeated by each coroutine
@@ -35,14 +55,30 @@ suspend fun massiveRun(action: suspend () -> Unit) {
     }
     println("Completed ${n * k} actions in $time ms")    
 }
-```
+-->
 
+最初は複数スレッドの [Dispatchers.Default] を用いて、
+共有されている変更可能な変数をインクリメントするという非常に単純な作業から始めます。
+<!--
 We start with a very simple action that increments a shared mutable variable using 
 multi-threaded [Dispatchers.Default].
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+var counter = 0
+
+fun main() = runBlocking {
+    withContext(Dispatchers.Default) {
+        massiveRun {
+            counter++
+        }
+    }
+    println("Counter = $counter")
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlin.system.*    
 
@@ -73,28 +109,51 @@ fun main() = runBlocking {
     println("Counter = $counter")
 }
 //sampleEnd    
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-01.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-01.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-01.kt).-->
+<!--{type="note"}-->
 
 <!--- TEST LINES_START
 Completed 100000 actions in
 Counter =
 -->
 
-What does it print at the end? It is highly unlikely to ever print "Counter = 100000", because a hundred coroutines 
-increment the `counter` concurrently from multiple threads without any synchronization.
+最後に何を表示するでしょう？
+100 個のコルーチンが複数のスレッドから同時になんら同期せずに `counter` をインクリメントするため、
+"Counter = 100000" と表示することはまずありません。
+<!--
+What does it print at the end? It is highly unlikely to ever print "Counter = 100000", because a hundred coroutines increment the `counter` concurrently from multiple threads without any synchronization.
+-->
 
-## Volatiles are of no help
+## Volatile は助けとなりません
+<!--## Volatiles are of no help-->
 
+変数を `volatile` とすることが並行性の問題を解決するというのはよくある誤解です。
+試してみましょう。
+<!--
 There is a common misconception that making a variable `volatile` solves concurrency problem. Let us try it:
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+@Volatile // Kotlin の `volatile` はアノテーションです
+var counter = 0
+
+fun main() = runBlocking {
+    withContext(Dispatchers.Default) {
+        massiveRun {
+            counter++
+        }
+    }
+    println("Counter = $counter")
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlin.system.*
 
@@ -126,32 +185,59 @@ fun main() = runBlocking {
     println("Counter = $counter")
 }
 //sampleEnd    
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-02.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-02.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-02.kt).-->
+<!--{type="note"}-->
 
 <!--- TEST LINES_START
 Completed 100000 actions in
 Counter =
 -->
 
+このコードは遅くなりますが、依然として最後に "Counter = 100000" が得られません。
+なぜなら、volatile の変数は対応する変数をリニアライザブルなように読み書きすることを保証しますが
+（リニアライザブル \[linearizable\] とは「アトミック」〔分割できない操作〕であることを意味する技術用語です）、
+よりまとまった作業（上の例ではインクリメント）が分割されないことを保証しないからです。
+<!--
 This code works slower, but we still don't get "Counter = 100000" at the end, because volatile variables guarantee
 linearizable (this is a technical term for "atomic") reads and writes to the corresponding variable, but
 do not provide atomicity of larger actions (increment in our case).
+-->
 
-## Thread-safe data structures
+## スレッドセーフなデータ構造
+<!--## Thread-safe data structures-->
 
+スレッドに対してもコルーチンに対しても機能する一般的な解決策は、
+共有された状態で実行される必要のある対応する操作すべてに、
+必要な同期を与えるスレッドセーフ（別名、同期的、リニアライザブル、アトミック）なデータ構造を用いることです。
+単純なカウンターの場合なら、
+アトミックな `incrementAndGet` 操作を持っている `AtomicInteger` クラスを使うことができます。
+<!--
 The general solution that works both for threads and for coroutines is to use a thread-safe (aka synchronized,
 linearizable, or atomic) data structure that provides all the necessary synchronization for the corresponding 
 operations that needs to be performed on a shared state. 
 In the case of a simple counter we can use `AtomicInteger` class which has atomic `incrementAndGet` operations:
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+val counter = AtomicInteger()
+
+fun main() = runBlocking {
+    withContext(Dispatchers.Default) {
+        massiveRun {
+            counter.incrementAndGet()
+        }
+    }
+    println("Counter = $counter")
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import java.util.concurrent.atomic.*
 import kotlin.system.*
@@ -183,32 +269,64 @@ fun main() = runBlocking {
     println("Counter = $counter")
 }
 //sampleEnd    
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-03.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-03.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-03.kt).-->
+<!--{type="note"}-->
 
 <!--- TEST ARBITRARY_TIME
 Completed 100000 actions in xxx ms
 Counter = 100000
 -->
 
+この特定の問題に対して、これは最も速い解決策となります。
+これは、簡単なカウンターや、コレクション、キュー、その他の標準的なデータ構造と
+それらに対する基本的な操作に対して利用できます。
+しかし、すぐに利用できるスレッドセーフな実装がない複雑な状態や、複雑な操作へと簡単に拡張できません。
+<!--
 This is the fastest solution for this particular problem. It works for plain counters, collections, queues and other
 standard data structures and basic operations on them. However, it does not easily scale to complex
 state or to complex operations that do not have ready-to-use thread-safe implementations. 
+-->
 
-## Thread confinement fine-grained
+## 密結合スレッド限定
+<!--## Thread confinement fine-grained-->
 
+__スレッド限定__ (thread confinement) は、
+特定の共有された状態へのアクセスすべてを単一のスレッドに限定するということは、
+共有された変更可能な状態の問題へのアプローチです。
+これは典型として UI アプリケーションで用いられており、
+すべての UI の状態は単一のイベント・ディスパッチ／アプリケーション・スレッドへと限定されています。
+単一スレッドのコンテキストを用いることでこれをコルーチンに適用することは簡単です。
+<!--
 _Thread confinement_ is an approach to the problem of shared mutable state where all access to the particular shared
 state is confined to a single thread. It is typically used in UI applications, where all UI state is confined to 
 the single event-dispatch/application thread. It is easy to apply with coroutines by using a  
 single-threaded context. 
+-->
 
 <!--- CLEAR -->
 
 ```kotlin
+val counterContext = newSingleThreadContext("CounterContext")
+var counter = 0
+
+fun main() = runBlocking {
+    withContext(Dispatchers.Default) {
+        massiveRun {
+            // 各インクリメントを単一スレッドのコンテキストへ限定します
+            withContext(counterContext) {
+                counter++
+            }
+        }
+    }
+    println("Counter = $counter")
+}
+```
+<!--kotlin
 import kotlinx.coroutines.*
 import kotlin.system.*
 
@@ -243,23 +361,30 @@ fun main() = runBlocking {
     println("Counter = $counter")
 }
 //sampleEnd      
-```
-{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
+-->
+<!--{kotlin-runnable="true" kotlin-min-compiler-version="1.3"}-->
 
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-04.kt).
+> 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-sync-04.kt) で入手できます。
 >
-{type="note"}
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-sync-04.kt).-->
+<!--{type="note"}-->
 
 <!--- TEST ARBITRARY_TIME
 Completed 100000 actions in xxx ms
 Counter = 100000
 -->
 
+__密結合__ (fine-grained) なスレッド限定を行うためにこのコードの動作は非常に遅いものです。
+各々の独立したインクリメントが、複数スレッドの [Dispatchers.Default] コンテキストを
+[withContext(counterContext)][withContext] を用いた単一スレッドのコンテキストへと切り替えています。
+<!--
 This code works very slowly, because it does _fine-grained_ thread-confinement. Each individual increment switches 
 from multi-threaded [Dispatchers.Default] context to the single-threaded context using 
 [withContext(counterContext)][withContext] block.
+-->
 
-## Thread confinement coarse-grained
+## 疎結合なスレッド限定
+<!--## Thread confinement coarse-grained-->
 
 In practice, thread confinement is performed in large chunks, e.g. big pieces of state-updating business logic
 are confined to the single thread. The following example does it like that, running each coroutine in 
