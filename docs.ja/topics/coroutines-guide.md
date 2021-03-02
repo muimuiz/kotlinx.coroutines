@@ -49,7 +49,7 @@ In order to use coroutines as well as follow the examples in this guide, you nee
 * [非同期の Flow](flow.md)（部分訳） ([Asynchronous Flow](https://kotlinlang.org/docs/flow.html))
 * [チャンネル](channels.md) ([Channels](https://kotlinlang.org/docs/channels.html))
 * [コルーチンの例外の扱い](exception-handling.md) ([Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.html))
-* [共有された変更可能な状態と並行性](shared-mutable-state-and-concurrency.html)（部分訳）[Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html)
+* [共有された変更可能な状態と並行性](shared-mutable-state-and-concurrency.md) ([Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html))
 * [Select expression (experimental)](https://kotlinlang.org/docs/select-expression.html)
 * [Tutorial: Debug coroutines using IntelliJ IDEA](https://kotlinlang.org/docs/debug-coroutines-with-idea.html)
 * [Tutorial: Debug Kotlin Flow using IntelliJ IDEA](https://kotlinlang.org/docs/debug-flow-with-idea.html)
