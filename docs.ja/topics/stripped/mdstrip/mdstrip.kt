@@ -70,7 +70,7 @@ fun Flow<String>.removeComments(): Flow<String> = flow {
     }
 }
 
-    fun Flow<String>.removeConsecutiveBlankLines(): Flow<String> = flow {
+fun Flow<String>.removeConsecutiveBlankLines(): Flow<String> = flow {
     var linePrev: String? = null
     collect { line: String ->
         if ( (linePrev == null) || !(linePrev!!.isBlankLine()) || !(line.isBlankLine()) ) emit(line)
