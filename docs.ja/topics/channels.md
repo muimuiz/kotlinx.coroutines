@@ -856,7 +856,7 @@ suspend fun player(name: String, table: Channel<Ball>) {
 
 > 完全なコードは [ここ](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt) で入手できます。
 >
-<!-- --> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt).-->
+<!-- > You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt).-->
 <!--{type="note"}-->
 
 "ping" コルーチンがまず開始するので、ボールを受ける最初のものになります。

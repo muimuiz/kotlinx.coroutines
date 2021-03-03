@@ -502,7 +502,7 @@ fun main() = runBlocking<Unit> {
 ## 中間 flow オペレーター
 <!--## Intermediate flow operators-->
 
-Flow はコレクションや sequence で行うのと同様にオペレーター（演算子）で変換することができます。
+Flow はコレクションや sequence で行うのと同様にオペレーターで変換することができます。
 中間オペレーター (intermediate operator) は上流の flow に適用されて下流へと flow を返します。
 これらのオペレーターは、flow と同様にコールドです。
 こうしたオペレーターの呼び出し自体はサスペンド関数ではありません。
@@ -728,7 +728,7 @@ Finally in numbers
 ## 終端 flow オペレーター
 <!--## Terminal flow operators-->
 
-Flow の終端オペレーター (terminal operator) は、その flow を collect し始める __サスペンド関数__ です。
+Flow の終端オペレーター（末端オペレーター、terminal operator）は、その flow を collect し始める __サスペンド関数__ です。
 [collect] オペレーターがその最も基本となるものですが、次のような利便的な他の終端オペレーターも用意されています。
 <!--
 Terminal operators on flows are _suspending functions_ that start a collection of the flow.
